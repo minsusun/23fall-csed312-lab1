@@ -366,7 +366,8 @@ thread_set_priority (int new_priority)
 int
 thread_get_priority (void) 
 {
-  return thread_current ()->priority;
+  // return thread_current ()->priority;
+  return thread_current () -> priority_original;
 }
 
 /* Sets the current thread's nice value to NICE. */
