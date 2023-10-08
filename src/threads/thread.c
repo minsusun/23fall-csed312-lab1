@@ -201,6 +201,11 @@ thread_create (const char *name, int priority,
   /* Add to run queue. */
   thread_unblock (t);
 
+  /* Lab1 - priority scheduling */
+  /* The priority of current thread is changed due to the thread_init().
+     Validate current thread's priority.  */
+  thread_validate_priority ();
+
   return tid;
 }
 
@@ -345,6 +350,11 @@ void
 thread_set_priority (int new_priority) 
 {
   thread_current ()->priority = new_priority;
+
+  /* Lab1 - priority scheduling */
+  /* The priority of current thread is changed due to the new priority.
+     Validate current thread's priority.  */
+  thread_validate_priority ();
 }
 
 /* Returns the current thread's priority. */
@@ -385,10 +395,21 @@ thread_get_recent_cpu (void)
   return 0;
 }
 
+/* Lab1 - priority scheduling */
 bool
 thread_compare_priority (const struct list_elem *p1, const struct list_elem *p2, void *aux UNUSED)
 {
   return list_entry (p1, struct thread, elem) -> priority > list_entry (p2, struct thread, elem) -> priority;
+}
+
+/* Lab1 - priority scheduling */
+void
+thread_validate_priority (void)
+{
+  /* If current thread has lower priority than the highest priority of ready_list,
+     it should be re-scheduled. So, just yield the current thread. */
+  if (!list_empty (&ready_list) && thread_current () -> priority < list_entry (list_begin (&ready_list), struct thread, elem))
+    thread_yield ();
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.

@@ -128,6 +128,11 @@ sema_up (struct semaphore *sema)
                                 struct thread, elem));
   }
   sema->value++;
+
+  /* Lab1 - priority scheduling */
+  /* There can be a higher priority than current thread on ready_list
+     by unblocking thread. Validate current thread. */
+  thread_validate_priority ();
   intr_set_level (old_level);
 }
 
@@ -341,6 +346,9 @@ cond_signal (struct condition *cond, struct lock *lock UNUSED)
     /* Priority of waiters can be changed. */
     list_sort (&cond -> waiters, sema_compare_priority, 0);
 
+    /* Unblocking a thread by sema_up() function may have
+       higher priority thread on ready_list. sema_up() function
+       will handle it. */
     sema_up (&list_entry (list_pop_front (&cond->waiters),
                           struct semaphore_elem, elem)->semaphore);
   }
