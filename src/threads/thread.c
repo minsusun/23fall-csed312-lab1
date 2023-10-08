@@ -24,6 +24,11 @@
    that are ready to run but not actually running. */
 static struct list ready_list;
 
+/* List of process in THREAD_SLEEP state, that is, processes
+   that are sleeping till the wake_tick of each and wake up
+   after wake_tick. */
+static struct list sleep_list;
+
 /* List of all processes.  Processes are added to this list
    when they are first scheduled and removed when they exit. */
 static struct list all_list;
@@ -91,6 +96,7 @@ thread_init (void)
 
   lock_init (&tid_lock);
   list_init (&ready_list);
+  list_init (&sleep_list);
   list_init (&all_list);
 
   /* Set up a thread structure for the running thread. */
@@ -115,6 +121,48 @@ thread_start (void)
 
   /* Wait for the idle thread to initialize idle_thread. */
   sema_down (&idle_started);
+}
+
+/* Lab1 - alarm clock */
+void
+thread_sleep (int64_t wakeup_ticks)
+{
+  enum intr_level old_level = intr_disable ();
+  struct thread *current = thread_current ();
+
+  current -> wakeup_ticks = wakeup_ticks;
+  
+  list_insert_ordered (&sleep_list, &current -> sleep_elem, thread_compare_wakeup_ticks, 0);
+  thread_block ();
+
+  intr_set_level (old_level);
+}
+
+/* Lab1 - alarm clock */
+void
+thread_wakeup (int64_t current_ticks)
+{
+  struct list_elem *element = list_begin (&sleep_list);
+
+  while (element != list_end (&sleep_list))
+  {
+    struct thread *thread_ = list_entry (element, struct thread, sleep_elem);
+
+    if (thread_ -> wakeup_ticks > current_ticks)
+      break;
+    
+    list_remove (element);
+    thread_unblock (thread_);
+
+    element = list_next (element);
+  }
+}
+
+/* Lab1 - alarm clock */
+bool
+thread_compare_wakeup_ticks (const struct list_elem *p1, const struct list_elem *p2, void *aux UNUSED)
+{
+  return list_entry(p1, struct thread, sleep_elem) -> wakeup_ticks < list_entry(p2, struct thread, sleep_elem) -> wakeup_ticks;
 }
 
 /* Called by the timer interrupt handler at each timer tick.
@@ -375,7 +423,7 @@ thread_get_recent_cpu (void)
   /* Not yet implemented. */
   return 0;
 }
-
+
 /* Idle thread.  Executes when no other thread is ready to run.
 
    The idle thread is initially put on the ready list by
@@ -424,7 +472,7 @@ kernel_thread (thread_func *function, void *aux)
   function (aux);       /* Execute the thread function. */
   thread_exit ();       /* If function() returns, kill the thread. */
 }
-
+
 /* Returns the running thread. */
 struct thread *
 running_thread (void) 
@@ -463,6 +511,8 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
+
+  t-> wakeup_ticks = -1;
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
@@ -578,7 +628,7 @@ allocate_tid (void)
 
   return tid;
 }
-
+
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);

@@ -100,6 +100,10 @@ struct thread
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
+
+    /* Lab1 - alarm clock */
+    int64_t wakeup_ticks;
+    struct list_elem sleep_elem;
   };
 
 /* If false (default), use round-robin scheduler.
@@ -109,6 +113,13 @@ extern bool thread_mlfqs;
 
 void thread_init (void);
 void thread_start (void);
+
+/* Lab1 - alarm clock */
+void thread_sleep (int64_t wake_tick);
+void thread_wakeup (int64_t cur_tick);
+
+/* Lab1 - alarm clock */
+bool thread_compare_wakeup_ticks (const struct list_elem *p1, const struct list_elem *p2, void *aux UNUSED);
 
 void thread_tick (void);
 void thread_print_stats (void);
