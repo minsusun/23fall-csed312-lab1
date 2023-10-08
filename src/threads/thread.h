@@ -133,6 +133,8 @@ void thread_foreach (thread_action_func *, void *);
 int thread_get_priority (void);
 void thread_set_priority (int);
 
+bool thread_compare_priority (const struct list_elem *p1, const struct list_elem *p2, void *aux UNUSED);
+
 int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);

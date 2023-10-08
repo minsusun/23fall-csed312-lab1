@@ -237,7 +237,11 @@ thread_unblock (struct thread *t)
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  list_push_back (&ready_list, &t->elem);
+  // list_push_back (&ready_list, &t->elem);
+  
+  /* Lab1 - priority scheduling */
+  list_insert_ordered (&ready_list, &t -> elem, thread_compare_priority, 0);
+  
   t->status = THREAD_READY;
   intr_set_level (old_level);
 }
@@ -307,8 +311,13 @@ thread_yield (void)
   ASSERT (!intr_context ());
 
   old_level = intr_disable ();
-  if (cur != idle_thread) 
-    list_push_back (&ready_list, &cur->elem);
+  if (cur != idle_thread)
+  {
+    // list_push_back (&ready_list, &cur->elem);
+
+    /* Lab1 - priority scheduling */
+    list_insert_ordered (&ready_list, &cur -> elem, thread_compare_priority, 0);
+  }
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -375,7 +384,13 @@ thread_get_recent_cpu (void)
   /* Not yet implemented. */
   return 0;
 }
-
+
+bool
+thread_compare_priority (const struct list_elem *p1, const struct list_elem *p2, void *aux UNUSED)
+{
+  return list_entry (p1, struct thread, elem) -> priority > list_entry (p2, struct thread, elem) -> priority;
+}
+
 /* Idle thread.  Executes when no other thread is ready to run.
 
    The idle thread is initially put on the ready list by
@@ -424,7 +439,7 @@ kernel_thread (thread_func *function, void *aux)
   function (aux);       /* Execute the thread function. */
   thread_exit ();       /* If function() returns, kill the thread. */
 }
-
+
 /* Returns the running thread. */
 struct thread *
 running_thread (void) 
@@ -578,7 +593,7 @@ allocate_tid (void)
 
   return tid;
 }
-
+
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
