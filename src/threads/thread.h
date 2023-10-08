@@ -119,7 +119,7 @@ void thread_sleep (int64_t wake_tick);
 void thread_wakeup (int64_t cur_tick);
 
 /* Lab1 - alarm clock */
-bool thread_compare_wakeup_ticks (const struct list_elem *p1, const struct list_elem *p2, void *aux UNUSED);
+bool thread_compare_wakeup_ticks (const struct list_elem *p1, const struct list_elem *p2, void *aux);
 
 void thread_tick (void);
 void thread_print_stats (void);

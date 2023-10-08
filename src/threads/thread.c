@@ -163,7 +163,7 @@ thread_wakeup (int64_t current_ticks)
 
 /* Lab1 - alarm clock */
 bool
-thread_compare_wakeup_ticks (const struct list_elem *p1, const struct list_elem *p2, void *aux UNUSED)
+thread_compare_wakeup_ticks (const struct list_elem *p1, const struct list_elem *p2, void *aux)
 {
   return list_entry(p1, struct thread, sleep_elem) -> wakeup_ticks < list_entry(p2, struct thread, sleep_elem) -> wakeup_ticks;
 }
