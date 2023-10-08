@@ -130,6 +130,9 @@ thread_sleep (int64_t wakeup_ticks)
   enum intr_level old_level = intr_disable ();
   struct thread *current = thread_current ();
 
+  ASSERT (current != idle_thread);
+  ASSERT (current -> status == THREAD_RUNNING);
+
   current -> wakeup_ticks = wakeup_ticks;
   
   list_insert_ordered (&sleep_list, &current -> sleep_elem, thread_compare_wakeup_ticks, 0);
