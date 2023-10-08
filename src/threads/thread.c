@@ -366,8 +366,7 @@ thread_set_priority (int new_priority)
 int
 thread_get_priority (void) 
 {
-  // return thread_current ()->priority;
-  return thread_current () -> priority_original;
+  return thread_current ()->priority;
 }
 
 /* Sets the current thread's nice value to NICE. */
@@ -642,7 +641,7 @@ void
 donate_priority (void)
 {
   struct thread *current = thread_current ();
-  while (!current -> _lock)
+  while (current -> _lock)
   {
     struct thread *holder = current -> _lock -> holder;
     /* No need to validate about priority. Currently running thread must have

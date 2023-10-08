@@ -226,7 +226,7 @@ lock_acquire (struct lock *lock)
   if (lock -> holder)
   {
     current -> _lock = lock;
-    list_insert_ordered (&(lock -> holder -> donation_list), &current -> donation_elem, thread_compare_donation_priority, 0);
+    list_insert_ordered (&lock -> holder -> donation_list, &current -> donation_elem, thread_compare_donation_priority, 0);
     donate_priority ();
   }
 
