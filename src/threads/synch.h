@@ -17,6 +17,9 @@ bool sema_try_down (struct semaphore *);
 void sema_up (struct semaphore *);
 void sema_self_test (void);
 
+/* Lab1 - priority scheduling */
+bool sema_compare_priority (const struct list_elem *p1, const struct list_elem *p2, void *aux);
+
 /* Lock. */
 struct lock 
   {
@@ -34,6 +37,13 @@ bool lock_held_by_current_thread (const struct lock *);
 struct condition 
   {
     struct list waiters;        /* List of waiting threads. */
+  };
+
+/* One semaphore in a list. */
+struct semaphore_elem 
+  {
+    struct list_elem elem;              /* List element. */
+    struct semaphore semaphore;         /* This semaphore. */
   };
 
 void cond_init (struct condition *);
