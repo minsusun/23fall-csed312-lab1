@@ -100,6 +100,12 @@ struct thread
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
+
+    /* Lab1 - priority donation */
+    int priority_original;
+    struct lock *_lock;
+    struct list donation_list;
+    struct list_elem donation_elem;
   };
 
 /* If false (default), use round-robin scheduler.
@@ -137,9 +143,17 @@ void thread_set_priority (int);
 bool thread_compare_priority (const struct list_elem *p1, const struct list_elem *p2, void *aux);
 void thread_validate_priority (void);
 
+/* Lab1 - priority donation */
+bool thread_compare_donation_priority (const struct list_elem *p1, const struct list_elem *p2, void *aux);
+
 int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+/* Lab1 - priority donation */
+void donate_priority (void);
+void update_donation (void);
+void remove_donation (struct lock *lock);
 
 #endif /* threads/thread.h */

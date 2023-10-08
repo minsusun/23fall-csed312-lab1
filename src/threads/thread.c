@@ -349,9 +349,14 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  thread_current ()->priority = new_priority;
+  // thread_current ()->priority = new_priority;
+
+  /* Lab1 - priority donation */
+  thread_current () -> priority_original = new_priority;
 
   /* Lab1 - priority scheduling */
+  /* Update donation relation due to change of original priority.  */
+  update_donation ();
   /* The priority of current thread is changed due to the new priority.
      Validate current thread's priority.  */
   thread_validate_priority ();
@@ -397,7 +402,7 @@ thread_get_recent_cpu (void)
 
 /* Lab1 - priority scheduling */
 bool
-thread_compare_priority (const struct list_elem *p1, const struct list_elem *p2, void *aux UNUSED)
+thread_compare_priority (const struct list_elem *p1, const struct list_elem *p2, void *aux)
 {
   return list_entry (p1, struct thread, elem) -> priority > list_entry (p2, struct thread, elem) -> priority;
 }
@@ -408,8 +413,15 @@ thread_validate_priority (void)
 {
   /* If current thread has lower priority than the highest priority of ready_list,
      it should be re-scheduled. So, just yield the current thread. */
-  if (!list_empty (&ready_list) && thread_current () -> priority < list_entry (list_begin (&ready_list), struct thread, elem))
+  if (!list_empty (&ready_list) && thread_current () -> priority < list_entry (list_front (&ready_list), struct thread, elem) -> priority)
     thread_yield ();
+}
+
+/* Lab1 - priority donation */
+bool
+thread_compare_donation_priority (const struct list_elem *p1, const struct list_elem *p2, void *aux)
+{
+  return list_entry (p1, struct thread, donation_elem) -> priority > list_entry (p2, struct thread, donation_elem) -> priority;
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.
@@ -499,6 +511,11 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
+
+  /* Lab1 - priority donation */
+  t -> priority_original = priority;
+  t -> _lock = NULL;
+  list_init (&t -> donation_list);
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
@@ -618,3 +635,52 @@ allocate_tid (void)
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
+
+/* Lab1 - priority donation */
+void
+donate_priority (void)
+{
+  struct thread *current = thread_current ();
+  while (!current -> _lock)
+  {
+    struct thread *holder = current -> _lock -> holder;
+    /* No need to validate about priority. Currently running thread must have
+      higher priority. No doubts. */
+    holder -> priority = current -> priority;
+    current = holder;
+  }
+}
+
+/* Lab1 - priority donation */
+void
+update_donation ()
+{
+  struct thread *current = thread_current ();
+  current -> priority = current -> priority_original;
+  if (!list_empty (&current -> donation_list))
+  {
+    struct thread *p1;
+    
+    list_sort (&current -> donation_list, thread_compare_donation_priority, 0);
+    
+    p1 = list_entry (list_front (&current -> donation_list), struct thread, donation_elem);
+    
+    if (p1 -> priority > current -> priority)
+      current -> priority = p1 -> priority;
+  }
+}
+
+/* Lab1 - priority donation */
+void
+remove_donation (struct lock *lock)
+{
+  struct thread *thread = thread_current ();
+  struct list_elem *element = list_begin (&thread -> donation_list);
+  while (element != list_end (&thread -> donation_list))
+  {
+    struct thread *donor = list_entry (element, struct thread, donation_elem);
+    if (donor -> _lock == lock)
+      list_remove (&donor -> donation_elem);
+    element = list_next (element);
+  }
+}

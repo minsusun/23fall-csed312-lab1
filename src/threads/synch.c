@@ -221,7 +221,20 @@ lock_acquire (struct lock *lock)
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
 
+  /* Lab1 - priority donation */
+  struct thread *current = thread_current ();
+  if (lock -> holder)
+  {
+    current -> _lock = lock;
+    list_insert_ordered (&(lock -> holder -> donation_list), &current -> donation_elem, thread_compare_donation_priority, 0);
+    donate_priority ();
+  }
+
   sema_down (&lock->semaphore);
+
+  /* Lab1 - priority donation */
+  current -> _lock = NULL;
+  
   lock->holder = thread_current ();
 }
 
@@ -255,6 +268,16 @@ lock_release (struct lock *lock)
 {
   ASSERT (lock != NULL);
   ASSERT (lock_held_by_current_thread (lock));
+
+  /* Lab1 - priority scheduling */
+  remove_donation (lock);
+  /* update_donation() for only current thread
+    :: Only donations made by currently releasing lock
+    will be make changes. Other priority donations
+    DOES NOT change the other threads' priority.  */
+  /* Operation of set priority function can mess up donations.
+    re-order the donation list to clear up donations. */
+  update_donation ();
 
   lock->holder = NULL;
   sema_up (&lock->semaphore);
