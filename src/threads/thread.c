@@ -778,7 +778,8 @@ void
 mlfqs_update_priority (struct thread *thread)
 {
   if (thread == idle_thread) return;
-  int priority = fp_int (fp_add (fp_div (thread -> recent_cpu, int_fp (-4)), int_fp (PRI_MAX - thread -> nice * 2)));
+  // Hotfix #2
+  int priority = fp_int_round (fp_add (fp_div (thread -> recent_cpu, int_fp (-4)), int_fp (PRI_MAX - thread -> nice * 2)));
   if (priority > PRI_MAX) priority = PRI_MAX;
   if (priority < PRI_MIN) priority = PRI_MIN;
   thread -> priority = priority;
@@ -805,7 +806,9 @@ mlfqs_update_recent_cpu (struct thread *thread)
   if (thread == idle_thread) return;
   int k = fp_mul (int_fp (2), load_avg);      // fp
   int a = fp_div (k, fp_add (k, int_fp (1))); // fp
-  thread -> recent_cpu = fp_add (fp_mul (a, thread -> recent_cpu), int_fp (thread -> nice));
+  // Hotfix #2
+  // thread -> recent_cpu = fp_add (fp_mul (a, thread -> recent_cpu), int_fp (thread -> nice));
+  thread -> recent_cpu = fp_add (fp_mul (fp_div (fp_mul (int_fp (2), load_avg), fp_add (fp_mul (int_fp (2), load_avg), int_fp (1))), thread -> recent_cpu), int_fp (thread -> nice));
 }
 
 /* Lab1 - MLFQS */
