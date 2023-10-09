@@ -393,8 +393,14 @@ thread_set_nice (int nice UNUSED)
 {
   /* Lab1 - MLFQS */
   enum intr_level old_level = intr_disable ();
-  thread_current () -> nice = nice;
-  mlfqs_update_priority (thread_current ());
+  struct thread *thread = thread_current ();
+  thread -> nice = nice;
+  mlfqs_update_priority (thread);
+  
+  // Hotfix #1
+  list_sort (&ready_list, thread_compare_priority, 0);
+  if (thread != idle_thread) thread_validate_priority ();
+  
   intr_set_level (old_level);
 }
 
@@ -721,9 +727,11 @@ thread_compare_donation_priority (const struct list_elem *p1, const struct list_
 void
 donate_priority (void)
 {
+  int depth;
   struct thread *current = thread_current ();
-  while (current -> _lock)
+  for (depth = 0; depth < DONATION_MAX_DEPTH; depth++)
   {
+    if (!current -> _lock) break;
     struct thread *holder = current -> _lock -> holder;
     /* No need to validate about priority. Currently running thread must have
       higher priority. No doubts. */
@@ -760,9 +768,8 @@ remove_donation (struct lock *lock)
   while (element != list_end (&thread -> donation_list))
   {
     struct thread *donor = list_entry (element, struct thread, donation_elem);
-    if (donor -> _lock == lock)
-      list_remove (&donor -> donation_elem);
-    element = list_next (element);
+    if (donor -> _lock == lock) element = list_remove (&donor -> donation_elem);
+    else element = list_next (element);
   }
 }
 
@@ -771,7 +778,8 @@ void
 mlfqs_update_priority (struct thread *thread)
 {
   if (thread == idle_thread) return;
-  int priority = fp_int (fp_add (fp_div (thread -> recent_cpu, int_fp (-4)), int_fp (PRI_MAX - thread -> nice * 2)));
+  // Hotfix #2
+  int priority = fp_int_round (fp_add (fp_div (thread -> recent_cpu, int_fp (-4)), int_fp (PRI_MAX - thread -> nice * 2)));
   if (priority > PRI_MAX) priority = PRI_MAX;
   if (priority < PRI_MIN) priority = PRI_MIN;
   thread -> priority = priority;
@@ -787,6 +795,8 @@ mlfqs_update_priority_all (void)
     mlfqs_update_priority (list_entry (element, struct thread, allelem));
     element = list_next (element);
   }
+  // Hotifx :: Occasionally fail mlfqs-nice-10 task
+  list_sort (&ready_list, thread_compare_priority, 0);
 }
 
 /* Lab1 - MLFQS */

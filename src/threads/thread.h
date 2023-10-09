@@ -24,6 +24,9 @@ typedef int tid_t;
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
 
+/* Lab1 - priority donation */
+#define DONATION_MAX_DEPTH 8
+
 /* Lab1 - MLFQS */
 #define NICE_MIN -20
 #define NICE_DEFAULT 0
