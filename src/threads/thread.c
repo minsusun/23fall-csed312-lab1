@@ -393,8 +393,14 @@ thread_set_nice (int nice UNUSED)
 {
   /* Lab1 - MLFQS */
   enum intr_level old_level = intr_disable ();
-  thread_current () -> nice = nice;
-  mlfqs_update_priority (thread_current ());
+  struct thread *thread = thread_current ();
+  thread -> nice = nice;
+  mlfqs_update_priority (thread);
+  
+  // Hotfix #1
+  list_sort (&ready_list, thread_compare_priority, 0);
+  if (thread != idle_thread) thread_validate_priority ();
+  
   intr_set_level (old_level);
 }
 
@@ -787,7 +793,7 @@ mlfqs_update_priority_all (void)
     mlfqs_update_priority (list_entry (element, struct thread, allelem));
     element = list_next (element);
   }
-  // Hotifx :: Occasionally fail mlfqs-nice-10 task
+  // Hotfix #1
   list_sort (&ready_list, thread_compare_priority, 0);
 }
 
