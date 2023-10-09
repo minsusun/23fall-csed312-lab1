@@ -177,9 +177,6 @@ timer_interrupt (struct intr_frame *args UNUSED)
   ticks++;
   thread_tick ();
 
-  /* Lab1 - alarm clock */
-  thread_wakeup (ticks);
-
   /* Lab1 - MLFQS */
   if (thread_mlfqs)
   {
@@ -189,8 +186,11 @@ timer_interrupt (struct intr_frame *args UNUSED)
       mlfqs_update_recent_cpu_all ();
       mlfqs_update_load_avg ();
     }
-    if (ticks % 4 == 3) mlfqs_update_priority_all ();
+    if (ticks % 4 == 0) mlfqs_update_priority_all ();
   }
+
+  /* Lab1 - alarm clock */
+  thread_wakeup (ticks);
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
