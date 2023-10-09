@@ -768,9 +768,8 @@ remove_donation (struct lock *lock)
   while (element != list_end (&thread -> donation_list))
   {
     struct thread *donor = list_entry (element, struct thread, donation_elem);
-    if (donor -> _lock == lock)
-      list_remove (&donor -> donation_elem);
-    element = list_next (element);
+    if (donor -> _lock == lock) element = list_remove (&donor -> donation_elem);
+    else element = list_next (element);
   }
 }
 
