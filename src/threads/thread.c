@@ -771,7 +771,10 @@ void
 mlfqs_update_priority (struct thread *thread)
 {
   if (thread == idle_thread) return;
-  thread -> priority = fp_int (fp_add (fp_div (thread -> recent_cpu, int_fp (-4)), int_fp (PRI_MAX - thread -> nice * 2)));
+  int priority = fp_int (fp_add (fp_div (thread -> recent_cpu, int_fp (-4)), int_fp (PRI_MAX - thread -> nice * 2)));
+  if (priority > PRI_MAX) priority = PRI_MAX;
+  if (priority < PRI_MIN) priority = PRI_MIN;
+  thread -> priority = priority;
 }
 
 /* Lab1 - MLFQS */
