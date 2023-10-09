@@ -432,9 +432,9 @@ thread_get_recent_cpu (void)
 {
   /* Lab1 - MLFQS */
   enum intr_level old_level = intr_disable ();
-  int _load_avg = fp_int_round (fp_mul (thread_current () -> recent_cpu, int_fp (100)));
+  int recent_cpu = fp_int_round (fp_mul (thread_current () -> recent_cpu, int_fp (100)));
   intr_set_level (old_level);
-  return _load_avg;
+  return recent_cpu;
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.
