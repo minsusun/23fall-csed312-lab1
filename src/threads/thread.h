@@ -24,6 +24,13 @@ typedef int tid_t;
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
 
+/* Lab1 - MLFQS */
+#define NICE_MIN -20
+#define NICE_DEFAULT 0
+#define NICE_MAX 20
+#define RECENT_CPU_DEFAULT 0
+#define LOAD_AVG_DEFAULT 0
+
 /* A kernel thread or user process.
 
    Each thread structure is stored in its own 4 kB page.  The
@@ -100,6 +107,10 @@ struct thread
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
+
+    /* Lab1 - MLFQS */
+    int nice;
+    int recent_cpu;
   };
 
 /* If false (default), use round-robin scheduler.
@@ -137,5 +148,13 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+/* Lab1 - MLFQS */
+void mlfqs_update_priority (struct thread *thread);
+void mlfqs_update_priority_all (void);
+void mlfqs_update_recent_cpu (struct thread *thread);
+void mlfqs_update_recent_cpu_all (void);
+void mlfqs_update_recent_cpu_tick (void);
+void mlfqs_update_load_avg  (void);
 
 #endif /* threads/thread.h */

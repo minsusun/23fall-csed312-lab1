@@ -172,6 +172,21 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
+
+  /* Lab1 - MLFQS */
+  if (thread_mlfqs)
+  {
+    mlfqs_update_recent_cpu_tick ();
+    if (ticks % 4 == 0)
+    {
+      mlfqs_update_priority_all ();
+      if (ticks % TIMER_FREQ == 0)
+      {
+        mlfqs_update_recent_cpu_all ();
+        mlfqs_update_load_avg ();
+      }
+    }
+  }
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
