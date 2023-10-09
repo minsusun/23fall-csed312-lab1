@@ -24,6 +24,13 @@ typedef int tid_t;
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
 
+/* Lab1 - MLFQS */
+#define NICE_MIN -20
+#define NICE_DEFAULT 0
+#define NICE_MAX 20
+#define RECENT_CPU_DEFAULT 0
+#define LOAD_AVG_DEFAULT 0
+
 /* A kernel thread or user process.
 
    Each thread structure is stored in its own 4 kB page.  The
@@ -104,11 +111,16 @@ struct thread
     /* Lab1 - alarm clock */
     int64_t wakeup_ticks;
     struct list_elem sleep_elem;
+    
     /* Lab1 - priority donation */
     int priority_original;
     struct lock *_lock;
     struct list donation_list;
     struct list_elem donation_elem;
+    
+    /* Lab1 - MLFQS */
+    int nice;
+    int recent_cpu;
   };
 
 /* If false (default), use round-robin scheduler.
@@ -165,5 +177,13 @@ int thread_get_load_avg (void);
 void donate_priority (void);
 void update_donation (void);
 void remove_donation (struct lock *lock);
+
+/* Lab1 - MLFQS */
+void mlfqs_update_priority (struct thread *thread);
+void mlfqs_update_priority_all (void);
+void mlfqs_update_recent_cpu (struct thread *thread);
+void mlfqs_update_recent_cpu_all (void);
+void mlfqs_update_recent_cpu_tick (void);
+void mlfqs_update_load_avg  (void);
 
 #endif /* threads/thread.h */

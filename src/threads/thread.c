@@ -15,6 +15,9 @@
 #include "userprog/process.h"
 #endif
 
+/* Lab1 - MLFQS */
+#include "threads/fixed-op.h"
+
 /* Random value for struct thread's `magic' member.
    Used to detect stack overflow.  See the big comment at the top
    of thread.h for details. */
@@ -63,6 +66,9 @@ static unsigned thread_ticks;   /* # of timer ticks since last yield. */
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
 bool thread_mlfqs;
+
+/* Lab1 - MLFQS */
+int load_avg;
 
 static void kernel_thread (thread_func *, void *aux);
 
@@ -115,6 +121,9 @@ thread_start (void)
   struct semaphore idle_started;
   sema_init (&idle_started, 0);
   thread_create ("idle", PRI_MIN, idle, &idle_started);
+
+  /* Lab1 - MLFQS */
+  load_avg = LOAD_AVG_DEFAULT;
 
   /* Start preemptive thread scheduling. */
   intr_enable ();
@@ -424,31 +433,44 @@ thread_get_priority (void)
 void
 thread_set_nice (int nice UNUSED) 
 {
-  /* Not yet implemented. */
+  /* Lab1 - MLFQS */
+  enum intr_level old_level = intr_disable ();
+  thread_current () -> nice = nice;
+  mlfqs_update_priority (thread_current ());
+  intr_set_level (old_level);
 }
 
 /* Returns the current thread's nice value. */
 int
 thread_get_nice (void) 
 {
-  /* Not yet implemented. */
-  return 0;
+  /* Lab1 - MLFQS */
+  enum intr_level old_level = intr_disable ();
+  int nice = thread_current () -> nice;
+  intr_set_level (old_level);
+  return nice;
 }
 
 /* Returns 100 times the system load average. */
 int
 thread_get_load_avg (void) 
 {
-  /* Not yet implemented. */
-  return 0;
+  /* Lab1 - MLFQS */
+  enum intr_level old_level = intr_disable ();
+  int _load_avg = fp_int_round (fp_mul (load_avg, int_fp (100)));
+  intr_set_level (old_level);
+  return _load_avg;
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
 int
 thread_get_recent_cpu (void) 
 {
-  /* Not yet implemented. */
-  return 0;
+  /* Lab1 - MLFQS */
+  enum intr_level old_level = intr_disable ();
+  int _load_avg = fp_int_round (fp_mul (thread_current () -> recent_cpu, int_fp (100)));
+  intr_set_level (old_level);
+  return _load_avg;
 }
 
 /* Lab1 - priority scheduling */
@@ -569,6 +591,9 @@ init_thread (struct thread *t, const char *name, int priority)
   t -> priority_original = priority;
   t -> _lock = NULL;
   list_init (&t -> donation_list);
+  /* Lab1 - MLFQS */
+  t -> nice = NICE_DEFAULT;
+  t -> recent_cpu = RECENT_CPU_DEFAULT;
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
@@ -736,4 +761,64 @@ remove_donation (struct lock *lock)
       list_remove (&donor -> donation_elem);
     element = list_next (element);
   }
+}
+
+/* Lab1 - MLFQS */
+void
+mlfqs_update_priority (struct thread *thread)
+{
+  if (thread == idle_thread) return;
+  thread -> priority = fp_int (fp_add (fp_div (thread -> recent_cpu, int_fp (-4)), int_fp (PRI_MAX - thread -> nice * 2)));
+}
+
+/* Lab1 - MLFQS */
+void 
+mlfqs_update_priority_all (void)
+{
+  struct list_elem *element = list_begin (&all_list);
+  while (element != list_end (&all_list))
+  {
+    mlfqs_update_priority (list_entry (element, struct thread, allelem));
+    element = list_next (element);
+  }
+}
+
+/* Lab1 - MLFQS */
+void
+mlfqs_update_recent_cpu (struct thread *thread)
+{
+  if (thread == idle_thread) return;
+  int k = fp_mul (int_fp (2), load_avg);      // fp
+  int a = fp_div (k, fp_add (k, fp_int (1))); // fp
+  thread -> recent_cpu = fp_add (fp_mul (a, thread -> recent_cpu), int_fp (thread -> nice));
+}
+
+/* Lab1 - MLFQS */
+void
+mlfqs_update_recent_cpu_all (void)
+{
+  struct list_elem *element = list_begin (&all_list);
+  while (element != list_end (&all_list))
+  {
+    mlfqs_update_recent_cpu (list_entry (element, struct thread, allelem));
+    element = list_next (element);
+  }
+}
+
+/* Lab1 - MLFQS */
+void
+mlfqs_update_recent_cpu_tick (void)
+{
+  if (thread_current () != idle_thread)
+    thread_current () -> recent_cpu = fp_add (thread_current () -> recent_cpu, int_fp (1));
+}
+
+/* Lab1 - MLFQS */
+void
+mlfqs_update_load_avg  (void)
+{
+  int ready_threads = int_fp (list_size (&ready_list) + (thread_current () == idle_thread));  // fp
+  int a = fp_div (int_fp (59), int_fp(60)); // fp
+  int b = fp_div (int_fp (1), int_fp(60));  // fp
+  load_avg = fp_add (fp_mul (a, load_avg), fp_mul (b, ready_threads));
 }
