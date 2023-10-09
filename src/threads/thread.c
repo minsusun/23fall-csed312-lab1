@@ -792,7 +792,7 @@ mlfqs_update_recent_cpu (struct thread *thread)
 {
   if (thread == idle_thread) return;
   int k = fp_mul (int_fp (2), load_avg);      // fp
-  int a = fp_div (k, fp_add (k, fp_int (1))); // fp
+  int a = fp_div (k, fp_add (k, int_fp (1))); // fp
   thread -> recent_cpu = fp_add (fp_mul (a, thread -> recent_cpu), int_fp (thread -> nice));
 }
 
