@@ -650,7 +650,7 @@ uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 
 /* Lab1 - alarm clock */
 bool
-thread_compare_wakeup_ticks (const struct list_elem *p1, const struct list_elem *p2, void *aux)
+thread_compare_wakeup_ticks (const struct list_elem *p1, const struct list_elem *p2, void *aux UNUSED)
 {
   return list_entry(p1, struct thread, sleep_elem) -> wakeup_ticks < list_entry(p2, struct thread, sleep_elem) -> wakeup_ticks;
 }
@@ -695,7 +695,7 @@ thread_wakeup (int64_t current_ticks)
 
 /* Lab1 - priority scheduling */
 bool
-thread_compare_priority (const struct list_elem *p1, const struct list_elem *p2, void *aux)
+thread_compare_priority (const struct list_elem *p1, const struct list_elem *p2, void *aux UNUSED)
 {
   return list_entry (p1, struct thread, elem) -> priority > list_entry (p2, struct thread, elem) -> priority;
 }
@@ -712,7 +712,7 @@ thread_validate_priority (void)
 
 /* Lab1 - priority donation */
 bool
-thread_compare_donation_priority (const struct list_elem *p1, const struct list_elem *p2, void *aux)
+thread_compare_donation_priority (const struct list_elem *p1, const struct list_elem *p2, void *aux UNUSED)
 {
   return list_entry (p1, struct thread, donation_elem) -> priority > list_entry (p2, struct thread, donation_elem) -> priority;
 }
