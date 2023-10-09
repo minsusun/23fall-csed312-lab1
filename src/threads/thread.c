@@ -132,51 +132,6 @@ thread_start (void)
   sema_down (&idle_started);
 }
 
-/* Lab1 - alarm clock */
-void
-thread_sleep (int64_t wakeup_ticks)
-{
-  enum intr_level old_level = intr_disable ();
-  struct thread *current = thread_current ();
-
-  ASSERT (current != idle_thread);
-  ASSERT (current -> status == THREAD_RUNNING);
-
-  current -> wakeup_ticks = wakeup_ticks;
-  
-  list_insert_ordered (&sleep_list, &current -> sleep_elem, thread_compare_wakeup_ticks, 0);
-  thread_block ();
-
-  intr_set_level (old_level);
-}
-
-/* Lab1 - alarm clock */
-void
-thread_wakeup (int64_t current_ticks)
-{
-  struct list_elem *element = list_begin (&sleep_list);
-
-  while (element != list_end (&sleep_list))
-  {
-    struct thread *thread_ = list_entry (element, struct thread, sleep_elem);
-
-    if (thread_ -> wakeup_ticks > current_ticks)
-      break;
-    
-    list_remove (element);
-    thread_unblock (thread_);
-
-    element = list_next (element);
-  }
-}
-
-/* Lab1 - alarm clock */
-bool
-thread_compare_wakeup_ticks (const struct list_elem *p1, const struct list_elem *p2, void *aux)
-{
-  return list_entry(p1, struct thread, sleep_elem) -> wakeup_ticks < list_entry(p2, struct thread, sleep_elem) -> wakeup_ticks;
-}
-
 /* Called by the timer interrupt handler at each timer tick.
    Thus, this function runs in an external interrupt context. */
 void
@@ -476,30 +431,6 @@ thread_get_recent_cpu (void)
   return _load_avg;
 }
 
-/* Lab1 - priority scheduling */
-bool
-thread_compare_priority (const struct list_elem *p1, const struct list_elem *p2, void *aux)
-{
-  return list_entry (p1, struct thread, elem) -> priority > list_entry (p2, struct thread, elem) -> priority;
-}
-
-/* Lab1 - priority scheduling */
-void
-thread_validate_priority (void)
-{
-  /* If current thread has lower priority than the highest priority of ready_list,
-     it should be re-scheduled. So, just yield the current thread. */
-  if (!list_empty (&ready_list) && thread_current () -> priority < list_entry (list_front (&ready_list), struct thread, elem) -> priority)
-    thread_yield ();
-}
-
-/* Lab1 - priority donation */
-bool
-thread_compare_donation_priority (const struct list_elem *p1, const struct list_elem *p2, void *aux)
-{
-  return list_entry (p1, struct thread, donation_elem) -> priority > list_entry (p2, struct thread, donation_elem) -> priority;
-}
-
 /* Idle thread.  Executes when no other thread is ready to run.
 
    The idle thread is initially put on the ready list by
@@ -716,6 +647,75 @@ allocate_tid (void)
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
+
+/* Lab1 - alarm clock */
+bool
+thread_compare_wakeup_ticks (const struct list_elem *p1, const struct list_elem *p2, void *aux)
+{
+  return list_entry(p1, struct thread, sleep_elem) -> wakeup_ticks < list_entry(p2, struct thread, sleep_elem) -> wakeup_ticks;
+}
+
+/* Lab1 - alarm clock */
+void
+thread_sleep (int64_t wakeup_ticks)
+{
+  enum intr_level old_level = intr_disable ();
+  struct thread *current = thread_current ();
+
+  ASSERT (current != idle_thread);
+  ASSERT (current -> status == THREAD_RUNNING);
+
+  current -> wakeup_ticks = wakeup_ticks;
+  
+  list_insert_ordered (&sleep_list, &current -> sleep_elem, thread_compare_wakeup_ticks, 0);
+  thread_block ();
+
+  intr_set_level (old_level);
+}
+
+/* Lab1 - alarm clock */
+void
+thread_wakeup (int64_t current_ticks)
+{
+  struct list_elem *element = list_begin (&sleep_list);
+
+  while (element != list_end (&sleep_list))
+  {
+    struct thread *thread_ = list_entry (element, struct thread, sleep_elem);
+
+    if (thread_ -> wakeup_ticks > current_ticks)
+      break;
+    
+    list_remove (element);
+    thread_unblock (thread_);
+
+    element = list_next (element);
+  }
+}
+
+/* Lab1 - priority scheduling */
+bool
+thread_compare_priority (const struct list_elem *p1, const struct list_elem *p2, void *aux)
+{
+  return list_entry (p1, struct thread, elem) -> priority > list_entry (p2, struct thread, elem) -> priority;
+}
+
+/* Lab1 - priority scheduling */
+void
+thread_validate_priority (void)
+{
+  /* If current thread has lower priority than the highest priority of ready_list,
+     it should be re-scheduled. So, just yield the current thread. */
+  if (!list_empty (&ready_list) && thread_current () -> priority < list_entry (list_front (&ready_list), struct thread, elem) -> priority)
+    thread_yield ();
+}
+
+/* Lab1 - priority donation */
+bool
+thread_compare_donation_priority (const struct list_elem *p1, const struct list_elem *p2, void *aux)
+{
+  return list_entry (p1, struct thread, donation_elem) -> priority > list_entry (p2, struct thread, donation_elem) -> priority;
+}
 
 /* Lab1 - priority donation */
 void

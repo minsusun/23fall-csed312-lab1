@@ -131,13 +131,6 @@ extern bool thread_mlfqs;
 void thread_init (void);
 void thread_start (void);
 
-/* Lab1 - alarm clock */
-void thread_sleep (int64_t wake_tick);
-void thread_wakeup (int64_t cur_tick);
-
-/* Lab1 - alarm clock */
-bool thread_compare_wakeup_ticks (const struct list_elem *p1, const struct list_elem *p2, void *aux);
-
 void thread_tick (void);
 void thread_print_stats (void);
 
@@ -161,19 +154,22 @@ void thread_foreach (thread_action_func *, void *);
 int thread_get_priority (void);
 void thread_set_priority (int);
 
-/* Lab1 - priority scheduling */
-bool thread_compare_priority (const struct list_elem *p1, const struct list_elem *p2, void *aux);
-void thread_validate_priority (void);
-
-/* Lab1 - priority donation */
-bool thread_compare_donation_priority (const struct list_elem *p1, const struct list_elem *p2, void *aux);
-
 int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
+/* Lab1 - alarm clock */
+bool thread_compare_wakeup_ticks (const struct list_elem *p1, const struct list_elem *p2, void *aux UNUSED);
+void thread_sleep (int64_t wakeup_tick);
+void thread_wakeup (int64_t current_tick);
+
+/* Lab1 - priority scheduling */
+bool thread_compare_priority (const struct list_elem *p1, const struct list_elem *p2, void *aux UNUSED);
+void thread_validate_priority (void);
+
 /* Lab1 - priority donation */
+bool thread_compare_donation_priority (const struct list_elem *p1, const struct list_elem *p2, void *aux UNUSED);
 void donate_priority (void);
 void update_donation (void);
 void remove_donation (struct lock *lock);

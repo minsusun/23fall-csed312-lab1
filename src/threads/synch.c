@@ -122,7 +122,7 @@ sema_up (struct semaphore *sema)
     /* Priority of waiters for a sema can be changed.
        Validate with sorting the waiter list.  
        Waiters list here is list of *THREADS*.       */
-    list_sort(&sema -> waiters, thread_compare_priority, 0);
+    list_sort (&sema -> waiters, thread_compare_priority, 0);
 
     thread_unblock (list_entry (list_pop_front (&sema->waiters),
                                 struct thread, elem));
@@ -221,28 +221,20 @@ lock_acquire (struct lock *lock)
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
 
-  struct thread *current;
+  struct thread *current = thread_current ();
 
-  if (!thread_mlfqs)
+  /* Lab1 - priority donation & MLFQS */
+  if (!thread_mlfqs && lock -> holder)
   {
-    /* Lab1 - priority donation */
-    current = thread_current ();
-    if (lock -> holder)
-    {
-      current -> _lock = lock;
-      list_insert_ordered (&lock -> holder -> donation_list, &current -> donation_elem, thread_compare_donation_priority, 0);
-      donate_priority ();
-    }
+    current -> _lock = lock;
+    list_insert_ordered (&lock -> holder -> donation_list, &current -> donation_elem, thread_compare_donation_priority, 0);
+    donate_priority ();
   }
 
   sema_down (&lock->semaphore);
 
-  /* Lab1 - MLFQS */
-  if (!thread_mlfqs)
-  {
-    /* Lab1 - priority donation */
-    current -> _lock = NULL;
-  }
+  /* Lab1 - priority donation */
+  current -> _lock = NULL;
   
   lock->holder = thread_current ();
 }
@@ -285,7 +277,7 @@ lock_release (struct lock *lock)
     remove_donation (lock);
     /* update_donation() for only current thread
       :: Only donations made by currently releasing lock
-      will be make changes. Other priority donations
+      will make changes. Other priority donations
       DOES NOT change the other threads' priority.  */
     /* Operation of set priority function can mess up donations.
       re-order the donation list to clear up donations. */
