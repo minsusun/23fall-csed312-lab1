@@ -820,7 +820,8 @@ mlfqs_update_recent_cpu_tick (void)
 void
 mlfqs_update_load_avg  (void)
 {
-  int ready_threads = int_fp (list_size (&ready_list) + (thread_current () == idle_thread));  // fp
+  int ready_threads = list_size (&ready_list);
+  if (thread_current () != idle_thread) ready_threads ++;
   int a = fp_div (int_fp (59), int_fp(60)); // fp
   int b = fp_div (int_fp (1), int_fp(60));  // fp
   load_avg = fp_add (fp_mul (a, load_avg), fp_mul (b, ready_threads));
