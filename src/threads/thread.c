@@ -787,6 +787,8 @@ mlfqs_update_priority_all (void)
     mlfqs_update_priority (list_entry (element, struct thread, allelem));
     element = list_next (element);
   }
+  // Hotifx :: Occasionally fail mlfqs-nice-10 task
+  list_sort (&ready_list, thread_compare_priority, 0);
 }
 
 /* Lab1 - MLFQS */
