@@ -727,9 +727,11 @@ thread_compare_donation_priority (const struct list_elem *p1, const struct list_
 void
 donate_priority (void)
 {
+  int depth;
   struct thread *current = thread_current ();
-  while (current -> _lock)
+  for (depth = 0; depth < DONATION_MAX_DEPTH; depth++)
   {
+    if (!current -> _lock) break;
     struct thread *holder = current -> _lock -> holder;
     /* No need to validate about priority. Currently running thread must have
       higher priority. No doubts. */
