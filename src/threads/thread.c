@@ -398,8 +398,8 @@ thread_set_nice (int nice UNUSED)
   mlfqs_update_priority (thread);
   
   // Hotfix #1
-  list_sort (&ready_list, thread_compare_priority, 0);
-  if (thread != idle_thread) thread_validate_priority ();
+  // list_sort (&ready_list, thread_compare_priority, 0);
+  // if (thread != idle_thread) thread_validate_priority ();
   
   intr_set_level (old_level);
 }
