@@ -692,10 +692,8 @@ thread_wakeup (int64_t current_ticks)
     if (thread_ -> wakeup_ticks > current_ticks)
       break;
     
-    list_remove (element);
+    element = list_remove (element);
     thread_unblock (thread_);
-
-    element = list_next (element);
   }
 }
 
