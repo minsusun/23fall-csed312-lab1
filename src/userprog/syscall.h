@@ -10,7 +10,7 @@ void syscall_init (void);
 
 /* Lab2 - userProcess */
 void load_arguments (int *esp, int *argv, int n);
-bool is_valid_vaddr (const void *vaddr);
+bool is_valid_vaddr (void *vaddr);
 
 /* Lab2 - systemCall(userProcess) */
 void    syscall_halt (void);

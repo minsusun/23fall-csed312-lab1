@@ -65,8 +65,6 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_WRITE:
       load_arguments (f -> esp, argv, 3);
-      if (!is_valid_vaddr ((void *)argv[1]))
-        syscall_exit (-1);
       f -> eax = syscall_write ((int)argv[0], (void *)argv[1], argv[2]);
       break;
     
@@ -101,7 +99,7 @@ load_arguments (int *esp, int *argv, int n)
 }
 
 bool
-is_valid_vaddr (const void *vaddr)
+is_valid_vaddr (void *vaddr)
 {
   return is_user_vaddr (vaddr) && vaddr >= CODE_SEGMENTATION_BASE;
 }
@@ -166,6 +164,8 @@ syscall_read (int fd, void *buffer, size_t size)
 int
 syscall_write (int fd, void *buffer, size_t size)
 {
+  if (!is_valid_vaddr (buffer))
+    syscall_exit (-1);
   putbuf (buffer, size);
   return size;
 }
