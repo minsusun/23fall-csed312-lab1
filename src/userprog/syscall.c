@@ -187,7 +187,7 @@ syscall_open (const char *filename)
 int
 syscall_filesize (int fd)
 {
-  struct file *file = thread_current () -> pcb -> fd_table[fd];
+  struct file *file = thread_current () -> pcb -> fdtable[fd];
   return (file == NULL) ? -1 : file_length (file);
 }
 
