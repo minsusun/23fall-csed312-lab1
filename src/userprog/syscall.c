@@ -133,9 +133,57 @@ sys_wait (pid_t pid)
 
 }
 
+bool
+syscall_create (const char *filename, size_t size)
+{
+
+}
+
+bool
+syscall_remove (const char *filename)
+{
+
+}
+
+int
+syscall_open (const char *filename)
+{
+
+}
+
+int
+syscall_filesize (int fd)
+{
+
+}
+
+int
+syscall_read (int fd, void *buffer, size_t size)
+{
+
+}
+
 int
 syscall_write (int fd, void *buffer, size_t size)
 {
   putbuf (buffer, size);
   return size;
+}
+
+void
+syscall_seek (int fd, size_t pos)
+{
+
+}
+
+size_t
+syscall_tell (int fd)
+{
+
+}
+
+void
+syscall_close (int fd)
+{
+
 }

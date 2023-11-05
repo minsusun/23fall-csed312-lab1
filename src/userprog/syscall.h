@@ -19,9 +19,9 @@ pid_t   syscall_exec (const char *command);
 int     syscall_wait (pid_t pid);
 
 /* Lab2 - systemCall(fileManipulation) */
-bool    syscall_create (const char *file, size_t size);
-bool    syscall_remove (const char *file);
-int     syscall_open (const char *file);
+bool    syscall_create (const char *filename, size_t size);
+bool    syscall_remove (const char *filename);
+int     syscall_open (const char *filename);
 int     syscall_filesize (int fd);
 int     syscall_read(int fd, void *buffer, size_t size);
 int     syscall_write (int fd, void *buffer, size_t size);
