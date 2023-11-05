@@ -18,6 +18,9 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 
+/* Lab2 - userProcess */
+#include "devices/timer.h"
+
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
@@ -74,8 +77,6 @@ process_execute (const char *command)
   if (tid == TID_ERROR)
   //  palloc_free_page (fn_copy); 
     palloc_free_page (cmd_copy);
-  
-  palloc_free_page (filename);
 
   return tid;
 }
@@ -137,6 +138,7 @@ start_process (void *command_)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
+  timer_msleep(100);
   return -1;
 }
 
@@ -554,7 +556,7 @@ void store_arguments (char **argv, int argc, void **esp)
   }
 
   /* word-align */
-  *esp -= (arg_size % 4) ? (4 - arg_size % 4) : 0;
+  *esp -= ((arg_size % 4) ? (4 - arg_size % 4) : 0);
   
   /* argv[argc] */
   *esp -= 4;

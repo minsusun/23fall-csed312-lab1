@@ -25,7 +25,7 @@ syscall_handler (struct intr_frame *f)
   // printf ("system call!\n");
   // thread_exit ();
 
-  if (is_user_vaddr (f -> esp))
+  if (!is_user_vaddr (f -> esp))
     syscall_exit (-1);
 
   int argv[3];
