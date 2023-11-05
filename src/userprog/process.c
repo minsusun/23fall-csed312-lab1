@@ -26,31 +26,69 @@ static bool load (const char *cmdline, void (**eip) (void), void **esp);
    before process_execute() returns.  Returns the new process's
    thread id, or TID_ERROR if the thread cannot be created. */
 tid_t
-process_execute (const char *file_name) 
+/* Lab2 - userProcess */
+process_execute (const char *command) 
+// process_execute (const char *file_name) 
 {
+  /*
   char *fn_copy;
   tid_t tid;
+  */
 
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
+  /*
   fn_copy = palloc_get_page (0);
   if (fn_copy == NULL)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
+  */
+
+  /* Lab2 - userProcess */
+  char *cmd_copy;
+  tid_t tid;
+  
+  /* Make a copy of command.
+     Otherwise there's a race between the caller and load(). */
+  cmd_copy = palloc_get_page (0);
+  if (cmd_copy == NULL)
+    return TID_ERROR;
+  strlcpy (cmd_copy, command, PGSIZE);
+
+  char *filename;
+
+  /* Make a copy of command which will be used
+     for containing the parsed filename from command. */
+  filename = palloc_get_page (0);
+  if (filename == NULL)
+    return TID_ERROR;
+  strlcpy (filename, command, PGSIZE);
+
+  /* Parse file name from command. */
+  parse_filename (filename);
 
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  /* Lab2 - userProcess */
+  // tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (filename, PRI_DEFAULT, start_process, cmd_copy);
   if (tid == TID_ERROR)
-    palloc_free_page (fn_copy); 
+  //  palloc_free_page (fn_copy); 
+    palloc_free_page (cmd_copy);
+  
+  palloc_free_page (filename);
+
   return tid;
 }
 
 /* A thread function that loads a user process and starts it
    running. */
 static void
-start_process (void *file_name_)
+// start_process (void *file_name_)
+start_process (void *command_)
 {
-  char *file_name = file_name_;
+  /* Lab2 - userProcess */
+  // char *file_name = file_name_;
+  char *command = command_;
   struct intr_frame if_;
   bool success;
 
@@ -59,10 +97,21 @@ start_process (void *file_name_)
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
-  success = load (file_name, &if_.eip, &if_.esp);
+  
+  /* Lab2 - userProcess */
+  /* Parse the arguments from the command and load to the stack.  */
+  // success = load (file_name, &if_.eip, &if_.esp);
+  char **argv = palloc_get_page(0);
+  int argc = parse_arguments (command, argv);
+  success = load (argv[0], &if_.eip, &if_.esp);
+  if (success)
+    store_arguments (agrv, agrc, &if_.esp);
+  palloc_free_page (argv);
 
   /* If load failed, quit. */
-  palloc_free_page (file_name);
+  /* Lab2 - userProcess */
+  // palloc_free_page (file_name);
+  palloc_free_page (command);
   if (!success) 
     thread_exit ();
 
@@ -462,4 +511,71 @@ install_page (void *upage, void *kpage, bool writable)
      address, then map our page there. */
   return (pagedir_get_page (t->pagedir, upage) == NULL
           && pagedir_set_page (t->pagedir, upage, kpage, writable));
+}
+
+/* Lab2 - userProcess */
+
+void parse_filename (char *command)
+{
+  char *saveptr;
+  command = strtok_r (command, " ", &saveptr);
+}
+
+int
+parse_arguments (char *command, char **argv)
+{
+  int argc = 0;
+  char *saveptr;
+  
+  char *argument = strtok_r (command, " ", &saveptr);
+  for(; argument != NULL; argument = strtok_r (NULL, " ", &saveptr))
+    argv[argc++] = argument;
+  
+  return argc;
+}
+
+void load_arguments (char **argv, int argc, void **esp)
+{
+  int i;
+  int arg_size = 0;
+
+  /* argv[i][...] */
+  for (i = argc - 1; i >= 0; i--)
+  {
+    int arg_len = strlen (argv[i]) + 1;
+    
+    *esp -= arg_len;
+    strlcpy (*esp, argv[i], arg_len);
+    
+    arg_size += arg_len;
+    
+    /* for pushing agrv[i] */
+    argv[i] = *esp;
+  }
+
+  /* word-align */
+  *esp -= (arg_size % 4) ? (4 - arg_size % 4) : 0;
+  
+  /* argv[argc] */
+  *esp -= 4;
+  **(uint32_t **)esp = NULL;
+
+  /* argv[i] */
+  for (i = argc - 1; i >= 0; i--)
+  {
+    *esp -= 4;
+    **(uint32_t **)esp = argv[i];
+  }
+
+  /* argv */
+  *esp -= 4;
+  **(uint32_t **)esp = *esp + 4;
+
+  /* argc */
+  *esp -= 4;
+  **(uint32_t **)esp = argc;
+
+  /* return address */
+  *esp -= 4;
+  **(uint32_t **)esp = 0;
 }
