@@ -4,10 +4,13 @@
 /* Lab2 - userProcess */
 #include "userprog/process.h"
 
+#define CODE_SEGMENTATION_BASE 0x08048000
+
 void syscall_init (void);
 
 /* Lab2 - userProcess */
 void load_arguments (int *esp, int *argv, int n);
+bool is_valid_vaddr (const void *vaddr);
 
 /* Lab2 - systemCall(userProcess) */
 void    syscall_halt (void);

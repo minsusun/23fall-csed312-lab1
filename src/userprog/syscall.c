@@ -26,7 +26,7 @@ syscall_handler (struct intr_frame *f)
   // printf ("system call!\n");
   // thread_exit ();
 
-  if (!is_user_vaddr (f -> esp))
+  if (!is_valid_vaddr (f -> esp))
     syscall_exit (-1);
 
   int argv[3];
@@ -65,7 +65,7 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_WRITE:
       load_arguments (f -> esp, argv, 3);
-      if (!is_user_vaddr ((void *)argv[1]))
+      if (!is_valid_vaddr ((void *)argv[1]))
         syscall_exit (-1);
       f -> eax = syscall_write ((int)argv[0], (void *)argv[1], argv[2]);
       break;
@@ -94,10 +94,16 @@ load_arguments (int *esp, int *argv, int n)
   int i;
   for (i = 0; i < n; i++)
   {
-    if (!is_user_vaddr (esp + 1 + i))
+    if (!is_valid_vaddr (esp + 1 + i))
       syscall_exit(-1);
     argv[i] = *(esp + 1 + i);
   }
+}
+
+bool
+is_valid_vaddr (const void *vaddr)
+{
+  return is_user_vaddr (vaddr) && vaddr >= CODE_SEGMENTATION_BASE;
 }
 
 void
