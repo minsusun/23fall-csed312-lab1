@@ -211,10 +211,27 @@ syscall_read (int fd, void *buffer, size_t size)
 int
 syscall_write (int fd, void *buffer, size_t size)
 {
-  if (!is_valid_vaddr (buffer))
+  struct pcb *pcb = thread_current () -> pcb;
+  int fdcount = pcb -> fdcount;
+
+  /* fd=0 cannot be used to write on */
+  if (!is_valid_vaddr (buffer) || fd < 1 || fd >= fdcount)
     syscall_exit (-1);
-  putbuf (buffer, size);
-  return size;
+  
+  if (fd == 1)
+  {
+    putbuf (buffer, size);
+    return size;
+  }
+  else
+  {
+    struct file *file = pcb -> fdtable[fd];
+
+    if (file == NULL)
+      syscall_exit (-1);
+    
+    return file_write (file, buffer, size);
+  }
 }
 
 void
