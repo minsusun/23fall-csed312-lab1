@@ -53,27 +53,27 @@ syscall_handler (struct intr_frame *f)
       break;
 
     case SYS_CREATE:
-      laod_arguments (f -> esp, argv, 2);
+      load_arguments (f -> esp, argv, 2);
       f -> eax = syscall_create (argv[0], argv[1]);
       break;
 
     case SYS_REMOVE:
-      laod_arguments (f -> esp, argv, 1);
+      load_arguments (f -> esp, argv, 1);
       f -> eax = syscall_remove (argv[0]);
       break;
 
     case SYS_OPEN:
-      laod_arguments (f -> esp, argv, 1);
+      load_arguments (f -> esp, argv, 1);
       f -> eax = syscall_open (argv[0]);
       break;
     
     case SYS_FILESIZE:
-      laod_arguments (f -> esp, argv, 1);
+      load_arguments (f -> esp, argv, 1);
       f -> eax = syscall_filesize (argv[0]);
       break;
 
     case SYS_READ:
-      laod_arguments (f -> esp, argv, 3);
+      load_arguments (f -> esp, argv, 3);
       f -> eax = syscall_read (argv[0], argv[1], argv[3]);
       break;
 
@@ -83,17 +83,17 @@ syscall_handler (struct intr_frame *f)
       break;
     
     case SYS_SEEK:
-      laod_arguments (f -> esp, argv, 2);
+      load_arguments (f -> esp, argv, 2);
       syscall_seek (argv[0], argv[1]);
       break;
     
     case SYS_TELL:
-      laod_arguments (f -> esp, argv, 1);
+      load_arguments (f -> esp, argv, 1);
       f -> eax = syscall_tell (argv[0]);
       break;
     
     case SYS_CLOSE:
-      laod_arguments (f -> esp, argv, 1);
+      load_arguments (f -> esp, argv, 1);
       syscall_close (argv[0]);
       break;
 
@@ -140,13 +140,13 @@ syscall_exit(int status)
 }
 
 pid_t
-sys_exec (const char *command)
+syscall_exec (const char *command)
 {
 
 }
 
 int
-sys_wait (pid_t pid)
+syscall_wait (pid_t pid)
 {
 
 }
