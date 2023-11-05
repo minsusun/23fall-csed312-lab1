@@ -7,6 +7,7 @@
 /* Lab2 - userProcess */
 #include "devices/shutdown.h"
 #include "threads/vaddr.h"
+#include "filesys/filesys.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -43,10 +44,17 @@ syscall_handler (struct intr_frame *f)
       break;
     case SYS_WAIT:
       break;
+    
+    case SYS_WRITE:
+      load_arguments (f -> esp, argv, 3);
+      if (!is_user_vaddr ((void *)argv[1]))
+        syscall_exit (-1);
+      f -> eax = syscall_write ((int)argv[0], (void *)argv[1], argv[2]);
+      break;
     default:
       /* temporary handling */
       printf ("default syscall handling!!\n");
-      thread_exit ();
+      // thread_exit ();
   }
 }
 
@@ -89,4 +97,11 @@ int
 sys_wait (pid_t pid)
 {
 
+}
+
+int
+syscall_write (int fd, void *buffer, size_t size)
+{
+  putbuf (buffer, size);
+  return size;
 }

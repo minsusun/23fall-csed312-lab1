@@ -13,4 +13,6 @@ void syscall_exit (int status);
 pid_t syscall_exec (const char *command);
 int syscall_wait (pid_t pid);
 
+int syscall_write (int fd, void *buffer, size_t size);
+
 #endif /* userprog/syscall.h */
