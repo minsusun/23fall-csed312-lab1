@@ -7,6 +7,7 @@
 /* Lab2 - userProcess */
 #include "devices/shutdown.h"
 #include "threads/vaddr.h"
+#include "filesys/file.h"
 #include "filesys/filesys.h"
 
 static void syscall_handler (struct intr_frame *);
@@ -177,21 +178,33 @@ syscall_open (const char *filename)
   if(file == NULL)
     return -1;
   
-  struct thread *thread = thread_current ();
-  thread -> pcb -> fdtable[thread -> pcb -> fdcount] = file;
+  struct pcb *pcb = thread_current () -> pcb;
+  pcb -> fdtable[pcb -> fdcount] = file;
   
-  return thread -> pcb -> fdcount++;
+  return pcb -> fdcount++;
 }
 
 int
 syscall_filesize (int fd)
 {
-
+  struct file *file = thread_current () -> pcb -> fd_table[fd];
+  return (file == NULL) ? -1 : file_length (file);
 }
 
 int
 syscall_read (int fd, void *buffer, size_t size)
 {
+  struct pcb *pcb = thread_current () -> pcb;
+  int fdcount = pcb -> fdcount;
+  
+  if (!is_valid_vaddr(buffer) || fd < 0 || fd > fdcount)
+    syscall_exit (-1);
+  
+  struct file *file = pcb -> fdtable[fd];
+  if (file == NULL)
+    syscall_exit (-1);
+  
+  return file_read (file, buffer, size);
 
 }
 
