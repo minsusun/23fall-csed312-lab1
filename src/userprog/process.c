@@ -115,6 +115,11 @@ start_process (void *command_)
   palloc_free_page (command);
   if (!success) 
     thread_exit ();
+  
+  struct thread *thread = thread_current ();
+  thread -> pcb = palloc_get_page (0);
+  thread -> pcb -> fdtable = palloc_get_page (PAL_ZERO);
+  thread -> pcb -> fdcount = 2;
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in

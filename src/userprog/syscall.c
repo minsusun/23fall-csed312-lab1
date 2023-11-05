@@ -170,7 +170,17 @@ syscall_remove (const char *filename)
 int
 syscall_open (const char *filename)
 {
-
+  if (!is_valid_vaddr (filename))
+    syscall_exit (-1);
+  
+  struct file *file = filesys_open (filename);
+  if(file == NULL)
+    return -1;
+  
+  struct thread *thread = thread_current ();
+  thread -> pcb -> fdtable[thread -> pcb -> fdcount] = file;
+  
+  return thread -> pcb -> fdcount++;
 }
 
 int
