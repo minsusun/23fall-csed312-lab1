@@ -154,13 +154,17 @@ sys_wait (pid_t pid)
 bool
 syscall_create (const char *filename, size_t size)
 {
-
+  if (!is_valid_vaddr (filename))
+    syscall_exit (-1);
+  return filesys_create (filename, size);
 }
 
 bool
 syscall_remove (const char *filename)
 {
-
+  if (!is_valid_vaddr (filename))
+    syscall_exit (-1);
+  return filesys_remove (filename);
 }
 
 int
