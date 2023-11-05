@@ -105,7 +105,7 @@ start_process (void *command_)
   int argc = parse_arguments (command, argv);
   success = load (argv[0], &if_.eip, &if_.esp);
   if (success)
-    store_arguments (agrv, agrc, &if_.esp);
+    store_arguments (argv, argc, &if_.esp);
   palloc_free_page (argv);
 
   /* If load failed, quit. */
