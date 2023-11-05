@@ -1,6 +1,9 @@
 #ifndef USERPROG_SYSCALL_H
 #define USERPROG_SYSCALL_H
 
+/* Lab2 - userProcess */
+#include "userprog/process.h"
+
 void syscall_init (void);
 
 /* Lab2 - userProcess */
