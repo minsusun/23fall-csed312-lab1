@@ -43,24 +43,38 @@ syscall_handler (struct intr_frame *f)
       break;
     
     case SYS_EXEC:
+      load_arguments (f -> esp, argv, 1);
+      f -> eax = syscall_exec (argv[0]);
       break;
     
     case SYS_WAIT:
+      load_arguments (f -> esp, argv, 1);
+      f -> eax = syscall_wait (argv[0]);
       break;
 
     case SYS_CREATE:
+      laod_arguments (f -> esp, argv, 2);
+      f -> eax = syscall_create (argv[0], argv[1]);
       break;
 
     case SYS_REMOVE:
+      laod_arguments (f -> esp, argv, 1);
+      f -> eax = syscall_remove (argv[0]);
       break;
 
     case SYS_OPEN:
+      laod_arguments (f -> esp, argv, 1);
+      f -> eax = syscall_open (argv[0]);
       break;
     
     case SYS_FILESIZE:
+      laod_arguments (f -> esp, argv, 1);
+      f -> eax = syscall_filesize (argv[0]);
       break;
 
     case SYS_READ:
+      laod_arguments (f -> esp, argv, 3);
+      f -> eax = syscall_read (argv[0], argv[1], argv[3]);
       break;
 
     case SYS_WRITE:
@@ -69,12 +83,18 @@ syscall_handler (struct intr_frame *f)
       break;
     
     case SYS_SEEK:
+      laod_arguments (f -> esp, argv, 2);
+      syscall_seek (argv[0], argv[1]);
       break;
     
     case SYS_TELL:
+      laod_arguments (f -> esp, argv, 1);
+      f -> eax = syscall_tell (argv[0]);
       break;
     
     case SYS_CLOSE:
+      laod_arguments (f -> esp, argv, 1);
+      syscall_close (argv[0]);
       break;
 
     default:
@@ -101,7 +121,7 @@ load_arguments (int *esp, int *argv, int n)
 bool
 is_valid_vaddr (void *vaddr)
 {
-  return is_user_vaddr (vaddr) && vaddr >= CODE_SEGMENTATION_BASE;
+  return is_user_vaddr (vaddr) && vaddr >= CODE_SEGMENTATION_BASE && vaddr != NULL;
 }
 
 void
