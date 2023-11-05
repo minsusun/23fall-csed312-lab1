@@ -36,21 +36,49 @@ syscall_handler (struct intr_frame *f)
     case SYS_HALT:
       syscall_halt ();
       break;
+    
     case SYS_EXIT:
       load_arguments (f -> esp, argv, 1);
       syscall_exit (argv[0]);
       break;
+    
     case SYS_EXEC:
       break;
+    
     case SYS_WAIT:
       break;
+
+    case SYS_CREATE:
+      break;
+
+    case SYS_REMOVE:
+      break;
+
+    case SYS_OPEN:
+      break;
     
+    case SYS_FILESIZE:
+      break;
+
+    case SYS_READ:
+      break;
+
     case SYS_WRITE:
       load_arguments (f -> esp, argv, 3);
       if (!is_user_vaddr ((void *)argv[1]))
         syscall_exit (-1);
       f -> eax = syscall_write ((int)argv[0], (void *)argv[1], argv[2]);
       break;
+    
+    case SYS_SEEK:
+      break;
+    
+    case SYS_TELL:
+      break;
+    
+    case SYS_CLOSE:
+      break;
+
     default:
       /* temporary handling */
       printf ("default syscall handling!!\n");
