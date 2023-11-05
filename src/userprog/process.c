@@ -534,7 +534,7 @@ parse_arguments (char *command, char **argv)
   return argc;
 }
 
-void load_arguments (char **argv, int argc, void **esp)
+void store_arguments (char **argv, int argc, void **esp)
 {
   int i;
   int arg_size = 0;
