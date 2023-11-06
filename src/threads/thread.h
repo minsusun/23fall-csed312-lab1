@@ -5,6 +5,9 @@
 #include <list.h>
 #include <stdint.h>
 
+/* Lab2 - systemCall */
+#include "threads/synch.h"
+
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -23,6 +26,23 @@ typedef int tid_t;
 #define PRI_MIN 0                       /* Lowest priority. */
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
+
+/* Lab2 - systemCall*/
+struct pcb
+   {
+      bool isexited;
+      bool isloaded;
+      int exitcode;
+      struct semaphore load;
+      struct semaphore wait;
+
+      /* ROX */
+      struct file *_file;
+
+      /* File Descriptor */
+      int fdcount;
+      struct file **fdtable;
+   };
 
 /* A kernel thread or user process.
 
@@ -96,6 +116,12 @@ struct thread
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
+    /* Lab2 - systemCall*/
+    struct pcb *pcb;
+
+    struct thread *parent;
+    struct list child_list;
+    struct list_elem childelem;
 #endif
 
     /* Owned by thread.c. */
@@ -137,5 +163,9 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+/* Lab2 - fileSystem */
+struct thread *thread_get_child (tid_t child_tid);
+struct pcb *thread_get_child_pcb (tid_t child_tid);
 
 #endif /* threads/thread.h */
