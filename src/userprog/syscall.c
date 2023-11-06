@@ -75,7 +75,7 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_READ:
       load_arguments (f -> esp, argv, 3);
-      f -> eax = syscall_read (argv[0], argv[1], argv[3]);
+      f -> eax = syscall_read (argv[0], argv[1], argv[2]);
       break;
 
     case SYS_WRITE:
