@@ -166,7 +166,7 @@ syscall_exec (const char *cmd_line)
 {
   pid_t pid = process_execute (cmd_line);
   struct pcb *pcb = thread_get_child_pcb (pid);
-  if (pid != 1 || !pcb -> isloaded)
+  if (pid == -1 || !pcb -> isloaded)
     return -1;
   
   return pid;
