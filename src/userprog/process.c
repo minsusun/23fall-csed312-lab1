@@ -73,8 +73,8 @@ process_execute (const char *command)
   /* Parse file name from command. */
   parse_filename (filename);
 
-  if (filesys_open (filename) == NULL)
-    return TID_ERROR;
+  // if (filesys_open (filename) == NULL)
+  //   return TID_ERROR;
 
   /* Create a new thread to execute FILE_NAME. */
   /* Lab2 - userProcess */
@@ -83,6 +83,8 @@ process_execute (const char *command)
   if (tid == TID_ERROR)
   //  palloc_free_page (fn_copy); 
     palloc_free_page (cmd_copy);
+  else
+    sema_down (&(thread_get_child_pcb (tid) -> load));
 
   return tid;
 }
@@ -115,12 +117,16 @@ start_process (void *command_)
     store_arguments (argv, argc, &if_.esp);
   palloc_free_page (argv);
 
-  /* If load failed, quit. */
   /* Lab2 - userProcess */
   // palloc_free_page (file_name);
   palloc_free_page (command);
+
+  sema_up (&(thread_current () -> pcb -> load));
+
+  /* If load failed, quit. */
   if (!success) 
-    thread_exit ();
+  //   thread_exit ();
+    syscall_exit (-1);
   
   /*
   // Move to thread_create
@@ -154,6 +160,7 @@ int
 // process_wait (tid_t child_tid UNUSED) 
 process_wait (tid_t child_tid) 
 {
+  /*
   // timer_msleep(100);
   struct list *child_list = &(thread_current () -> child_list);
   struct list_elem *elem;
@@ -170,6 +177,19 @@ process_wait (tid_t child_tid)
   }
 
   return -1;
+  */
+
+  struct pcb *pcb = thread_get_child_pcb (child_tid);
+  int exitcode;
+
+  if (pcb == NULL || pcb -> exitcode == -2 || !pcb -> isloaded)
+    return -1;
+  
+  sema_down (&(pcb -> wait));
+  exitcode = pcb -> exitcode;
+  pcb -> exitcode = -2;
+
+  return exitcode;
 }
 
 /* Free the current process's resources. */
@@ -206,7 +226,7 @@ process_exit (void)
   /* Lab2 - systemCall */
   cur -> pcb -> isexited = true;
   sema_up (&(cur -> pcb -> wait));
-  list_remove (&(cur -> childelem));
+  // list_remove (&(cur -> childelem));
 }
 
 /* Sets up the CPU for running user code in the current
@@ -404,6 +424,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
   /* Start address. */
   *eip = (void (*) (void)) ehdr.e_entry;
+
+  t -> pcb -> isloaded = true;
 
   success = true;
 

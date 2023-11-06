@@ -146,6 +146,12 @@ syscall_exit(int status)
   struct thread *thread = thread_current ();
   thread -> pcb -> exitcode = status;
 
+  // sema_up (&(thread -> pcb -> load));
+  // sema_up (&(thread -> pcb -> wait));
+
+  if (!thread -> pcb -> isloaded)
+    sema_up (&(thread -> pcb -> load));
+
   printf ("%s: exit(%d)\n", thread -> name, status);
   thread_exit ();
 }
@@ -153,7 +159,14 @@ syscall_exit(int status)
 pid_t
 syscall_exec (const char *cmd_line)
 {
-  return process_execute (cmd_line);
+  pid_t pid = process_execute (cmd_line);
+  struct pcb *pcb = thread_get_child_pcb (pid);
+  if (pid != 1 || !pcb -> isloaded)
+    return -1;
+  
+  return pid;
+
+  // return process_execute (cmd_line);
 }
 
 int
