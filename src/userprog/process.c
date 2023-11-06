@@ -19,7 +19,10 @@
 #include "threads/vaddr.h"
 
 /* Lab2 - userProcess */
-#include "devices/timer.h"
+// #include "devices/timer.h"
+
+/* Lab2 - fileSystem */
+#include "userprog/syscall.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
@@ -70,6 +73,9 @@ process_execute (const char *command)
   /* Parse file name from command. */
   parse_filename (filename);
 
+  // if (filesys_open (filename) == NULL)
+  //   return TID_ERROR;
+
   /* Create a new thread to execute FILE_NAME. */
   /* Lab2 - userProcess */
   // tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
@@ -77,6 +83,10 @@ process_execute (const char *command)
   if (tid == TID_ERROR)
   //  palloc_free_page (fn_copy); 
     palloc_free_page (cmd_copy);
+  else
+    sema_down (&(thread_get_child_pcb (tid) -> load));
+
+  palloc_free_page (filename);
 
   return tid;
 }
@@ -109,12 +119,24 @@ start_process (void *command_)
     store_arguments (argv, argc, &if_.esp);
   palloc_free_page (argv);
 
-  /* If load failed, quit. */
   /* Lab2 - userProcess */
   // palloc_free_page (file_name);
   palloc_free_page (command);
+
+  sema_up (&(thread_current () -> pcb -> load));
+
+  /* If load failed, quit. */
   if (!success) 
-    thread_exit ();
+  //   thread_exit ();
+    syscall_exit (-1);
+  
+  /*
+  // Move to thread_create
+  struct thread *thread = thread_current ();
+  thread -> pcb = palloc_get_page (0);
+  thread -> pcb -> fdtable = palloc_get_page (PAL_ZERO);
+  thread -> pcb -> fdcount = 2;
+  */
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -136,10 +158,55 @@ start_process (void *command_)
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
 int
-process_wait (tid_t child_tid UNUSED) 
+/* Lab2 - systemCall */
+// process_wait (tid_t child_tid UNUSED) 
+process_wait (tid_t child_tid) 
 {
-  timer_msleep(100);
+  /*
+  // timer_msleep(100);
+  struct list *child_list = &(thread_current () -> child_list);
+  struct list_elem *elem;
+
+  for (elem = list_begin (child_list); elem != list_end (child_list); elem = list_next (elem))
+  {
+    struct thread *child = list_entry (elem, struct thread, childelem);
+    if (child -> tid == child_tid)
+    {
+      struct pcb *pcb = child -> pcb;
+      sema_down (&(pcb -> wait));
+      return pcb -> exitcode;
+    }
+  }
+
   return -1;
+  */
+
+  // struct pcb *pcb = thread_get_child_pcb (child_tid);
+  struct thread *child = thread_get_child (child_tid);
+
+  // if (pcb == NULL || pcb -> exitcode == -2 || !pcb -> isloaded)
+  if (child == NULL)
+    return -1;
+  
+  struct pcb *pcb = child -> pcb;
+  
+  if (pcb == NULL || pcb -> exitcode == -2 || !pcb -> isloaded)
+    return -1;
+  
+  sema_down (&(pcb -> wait));
+  int exitcode = pcb -> exitcode;
+  
+  /*
+  sema_down (&(pcb -> wait));
+  exitcode = pcb -> exitcode;
+  pcb -> exitcode = -2;
+  */
+
+  list_remove (&(child -> childelem));
+  palloc_free_page (child -> pcb);
+  palloc_free_page (child);
+
+  return exitcode;
 }
 
 /* Free the current process's resources. */
@@ -148,6 +215,13 @@ process_exit (void)
 {
   struct thread *cur = thread_current ();
   uint32_t *pd;
+
+  /* Lab2 - systemCall */
+  int i;
+  for (i = cur -> pcb -> fdcount - 1; i > 1; i--)
+    syscall_close (i);
+  
+  palloc_free_page (cur -> pcb -> fdtable);
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
@@ -165,6 +239,11 @@ process_exit (void)
       pagedir_activate (NULL);
       pagedir_destroy (pd);
     }
+  
+  /* Lab2 - systemCall */
+  cur -> pcb -> isexited = true;
+  sema_up (&(cur -> pcb -> wait));
+  // list_remove (&(cur -> childelem));
 }
 
 /* Sets up the CPU for running user code in the current
@@ -279,6 +358,10 @@ load (const char *file_name, void (**eip) (void), void **esp)
       printf ("load: %s: open failed\n", file_name);
       goto done; 
     }
+  
+  /* Lab2 - systemCall */
+  /* ROX */
+  t -> pcb -> _file = file;
 
   /* Read and verify executable header. */
   if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
@@ -358,6 +441,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
   /* Start address. */
   *eip = (void (*) (void)) ehdr.e_entry;
+
+  t -> pcb -> isloaded = true;
 
   success = true;
 
