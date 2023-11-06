@@ -86,6 +86,8 @@ process_execute (const char *command)
   else
     sema_down (&(thread_get_child_pcb (tid) -> load));
 
+  palloc_free_page (filename);
+
   return tid;
 }
 
@@ -179,15 +181,30 @@ process_wait (tid_t child_tid)
   return -1;
   */
 
-  struct pcb *pcb = thread_get_child_pcb (child_tid);
-  int exitcode;
+  // struct pcb *pcb = thread_get_child_pcb (child_tid);
+  struct thread *child = thread_get_child (child_tid);
 
+  // if (pcb == NULL || pcb -> exitcode == -2 || !pcb -> isloaded)
+  if (child == NULL)
+    return -1;
+  
+  struct pcb *pcb = child -> pcb;
+  
   if (pcb == NULL || pcb -> exitcode == -2 || !pcb -> isloaded)
     return -1;
   
   sema_down (&(pcb -> wait));
+  int exitcode = pcb -> exitcode;
+  
+  /*
+  sema_down (&(pcb -> wait));
   exitcode = pcb -> exitcode;
   pcb -> exitcode = -2;
+  */
+
+  list_remove (&(child -> childelem));
+  palloc_free_page (child -> pcb);
+  palloc_free_page (child);
 
   return exitcode;
 }

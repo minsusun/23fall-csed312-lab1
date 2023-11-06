@@ -204,6 +204,9 @@ thread_create (const char *name, int priority,
 
   /* PCB */
   struct pcb *pcb = child -> pcb = palloc_get_page (0);
+
+  if (pcb == NULL)
+    return TID_ERROR;
   
   pcb -> exitcode = -1;
   pcb -> isexited = false;
@@ -216,6 +219,12 @@ thread_create (const char *name, int priority,
 
   pcb -> fdtable = palloc_get_page (PAL_ZERO);
   pcb -> fdcount = 2;
+
+  if (pcb -> fdtable == NULL)
+  {
+    palloc_free_page (pcb);
+    return TID_ERROR;
+  }
 
   child -> parent = parent;
 

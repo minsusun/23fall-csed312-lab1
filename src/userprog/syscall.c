@@ -14,7 +14,9 @@
 /* Lab2 - fileSystem */
 #include "threads/synch.h"
 
-struct lock file_lock;
+// struct lock file_lock;
+struct semaphore rw, general;
+int reads;
 
 static void syscall_handler (struct intr_frame *);
 
@@ -24,7 +26,10 @@ syscall_init (void)
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 
   /* Lab2 - fileSystem */
-  lock_init (&file_lock);
+  // lock_init (&file_lock);
+  sema_init (&rw, 1);
+  sema_init (&general, 1);
+  reads = 0;
 }
 
 static void
@@ -194,18 +199,18 @@ syscall_remove (const char *file)
 int
 syscall_open (const char *file)
 {
-  lock_acquire (&file_lock);
+  // lock_acquire (&file_lock);
 
   if (!is_valid_vaddr (file))
   {
-    lock_release (&file_lock);
+    // lock_release (&file_lock);
     syscall_exit (-1);
   }
   
   struct file *file_ = filesys_open (file);
   if(file_ == NULL)
   {
-    lock_release (&file_lock);
+    // lock_release (&file_lock);
     return -1;
   }
   
@@ -218,7 +223,7 @@ syscall_open (const char *file)
 
   pcb -> fdtable[pcb -> fdcount] = file_;
 
-  lock_release (&file_lock);
+  // lock_release (&file_lock);
   
   return pcb -> fdcount++;
 }
@@ -244,11 +249,23 @@ syscall_read (int fd, void *buffer, unsigned size)
     syscall_exit (-1);
   
   /* Lab2 - fileSystem */
-  lock_acquire (&file_lock);
+  // lock_acquire (&file_lock);
+
+  sema_down (&general);
+  reads++;
+  if (reads == 1)
+    sema_down (&rw);
+  sema_up (&general);
   
   int read_size = file_read (file, buffer, size);
   
-  lock_release (&file_lock);
+  // lock_release (&file_lock);
+
+  sema_down (&general);
+  reads--;
+  if (reads == 0)
+    sema_up (&rw);
+  sema_up (&general);
   
   return read_size;
 
@@ -267,11 +284,11 @@ syscall_write (int fd, void *buffer, unsigned size)
   
   if (fd == 1)
   {
-    lock_acquire (&file_lock);
+    // lock_acquire (&file_lock);
     
     putbuf (buffer, size);
     
-    lock_release(&file_lock);
+    // lock_release(&file_lock);
     
     return size;
   }
@@ -283,11 +300,15 @@ syscall_write (int fd, void *buffer, unsigned size)
       syscall_exit (-1);
     
     /* Lab2 - fileSystem */
-    lock_acquire (&file_lock);
+    // lock_acquire (&file_lock);
+
+    sema_down (&rw);
     
     int write_size = file_write (file, buffer, size);
     
-    lock_release (&file_lock);
+    // lock_release (&file_lock);
+
+    sema_up (&rw);
     
     return write_size;
     
