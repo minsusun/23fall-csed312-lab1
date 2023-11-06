@@ -197,7 +197,7 @@ syscall_read (int fd, void *buffer, size_t size)
   struct pcb *pcb = thread_current () -> pcb;
   int fdcount = pcb -> fdcount;
   
-  if (!is_valid_vaddr(buffer) || fd < 0 || fd > fdcount)
+  if (!is_valid_vaddr(buffer) || fd < 0 || fd >= fdcount)
     syscall_exit (-1);
   
   struct file *file = pcb -> fdtable[fd];
