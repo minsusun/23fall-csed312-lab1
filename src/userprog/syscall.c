@@ -237,17 +237,49 @@ syscall_write (int fd, void *buffer, size_t size)
 void
 syscall_seek (int fd, size_t pos)
 {
+  struct pcb *pcb = thread_current () -> pcb;
+  int fdcount = pcb -> fdcount;
 
+  if (fd >= 0 && fd < fdcount)
+  {
+    struct file *file = pcb -> fdtable[fd];
+    if (file != NULL)
+      file_seek (file, pos);
+  }
 }
 
 size_t
 syscall_tell (int fd)
 {
+  struct pcb *pcb = thread_current () -> pcb;
+  int fdcount = pcb -> fdcount;
 
+  if (fd < 0 || fd >= fdcount)
+    return -1;
+  
+  struct file *file = pcb -> fdtable[fd];
+  if (file == NULL)
+    return -1;
+  
+  return file_tell (file);
 }
 
 void
 syscall_close (int fd)
 {
+  struct pcb *pcb = thread_current () -> pcb;
+  int fdcount = pcb -> fdcount,i;
 
+  if (fd >= fdcount || fd < 2)
+    syscall_exit (-1);
+  
+  struct file * file = pcb -> fdtable[fd];
+  if (file == NULL)
+    return;
+  
+  for (i = fd; i < fdcount; i++)
+    pcb -> fdtable[i] = pcb -> fdtable[i + 1];
+  pcb -> fdcount --;
+
+  file_close (file);
 }
