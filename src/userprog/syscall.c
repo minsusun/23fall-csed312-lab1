@@ -143,13 +143,13 @@ syscall_exit(int status)
 pid_t
 syscall_exec (const char *command)
 {
-
+  return process_execute (command);
 }
 
 int
 syscall_wait (pid_t pid)
 {
-
+  return process_wait (pid);
 }
 
 bool
