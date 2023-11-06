@@ -19,7 +19,7 @@
 #include "threads/vaddr.h"
 
 /* Lab2 - userProcess */
-#include "devices/timer.h"
+// #include "devices/timer.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
@@ -70,6 +70,9 @@ process_execute (const char *command)
   /* Parse file name from command. */
   parse_filename (filename);
 
+  if (filesys_open (filename) == NULL)
+    return TID_ERROR;
+
   /* Create a new thread to execute FILE_NAME. */
   /* Lab2 - userProcess */
   // tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
@@ -116,10 +119,13 @@ start_process (void *command_)
   if (!success) 
     thread_exit ();
   
+  /*
+  // Move to thread_create
   struct thread *thread = thread_current ();
   thread -> pcb = palloc_get_page (0);
   thread -> pcb -> fdtable = palloc_get_page (PAL_ZERO);
   thread -> pcb -> fdcount = 2;
+  */
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -141,9 +147,24 @@ start_process (void *command_)
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
 int
-process_wait (tid_t child_tid UNUSED) 
+/* Lab2 - systemCall */
+// process_wait (tid_t child_tid UNUSED) 
+process_wait (tid_t child_tid) 
 {
-  timer_msleep(100);
+  // timer_msleep(100);
+  struct list *child_list = &(thread_current () -> child_list);
+  struct list_elem *elem;
+
+  for (elem = list_begin (child_list); elem != list_end; elem = list_next (elem))
+  {
+    struct thread *child = list_entry (elem, struct thread, childelem);
+    if (child -> tid == child_tid)
+    {
+      struct pcb *pcb = child -> pcb;
+      sema_down (&(pcb -> wait));
+      return pcb -> exitcode;
+    }
+  }
   return -1;
 }
 
@@ -170,6 +191,11 @@ process_exit (void)
       pagedir_activate (NULL);
       pagedir_destroy (pd);
     }
+  
+  /* Lab2 - systemCall */
+  cur -> pcb -> isexited = true;
+  sema_up (&(cur -> pcb -> wait));
+  list_remove (&(cur -> childelem));
 }
 
 /* Sets up the CPU for running user code in the current

@@ -5,6 +5,9 @@
 #include <list.h>
 #include <stdint.h>
 
+/* Lab2 - systemCall */
+#include "threads/synch.h"
+
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -27,6 +30,13 @@ typedef int tid_t;
 /* Lab2 - systemCall*/
 struct pcb
    {
+      bool isexited;
+      bool isloaded;
+      int exitcode;
+      struct semaphore load;
+      struct semaphore wait;
+
+      /* File Descriptor */
       int fdcount;
       struct file **fdtable;
    };
@@ -105,6 +115,10 @@ struct thread
     uint32_t *pagedir;                  /* Page directory. */
     /* Lab2 - systemCall*/
     struct pcb *pcb;
+
+    struct thread *parent;
+    struct list child_list;
+    struct list_elem childelem;
 #endif
 
     /* Owned by thread.c. */

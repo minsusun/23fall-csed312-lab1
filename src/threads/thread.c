@@ -198,6 +198,27 @@ thread_create (const char *name, int priority,
   sf->eip = switch_entry;
   sf->ebp = 0;
 
+  /* Lab2 - systemCall */
+  struct thread *parent = thread_current ();
+  struct thread *child = t;
+
+  /* PCB */
+  struct pcb *pcb = child -> pcb = palloc_get_page (0);
+  
+  pcb -> exitcode = -1;
+  pcb -> isexited = false;
+  pcb -> isloaded = false;
+
+  sema_init (&(pcb -> load), 0);
+  sema_init (&(pcb -> wait), 0);
+
+  pcb -> fdtable = palloc_get_page (PAL_ZERO);
+  pcb -> fdcount = 2;
+
+  child -> parent = parent;
+
+  list_push_back (&(parent -> child_list), &(child -> childelem));
+
   /* Add to run queue. */
   thread_unblock (t);
 
@@ -467,6 +488,9 @@ init_thread (struct thread *t, const char *name, int priority)
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
   intr_set_level (old_level);
+
+  /* Lab2 - systemCall */
+  list_init (&(t -> child_list));
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and

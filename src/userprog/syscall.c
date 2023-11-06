@@ -135,6 +135,7 @@ void
 syscall_exit(int status)
 {
   struct thread *thread = thread_current ();
+  thread -> pcb -> exitcode = status;
 
   printf ("%s: exit(%d)\n", thread -> name, status);
   thread_exit ();
