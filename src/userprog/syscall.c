@@ -144,7 +144,7 @@ syscall_exit(int status)
 pid_t
 syscall_exec (const char *cmd_line)
 {
-  return process_execute (command);
+  return process_execute (cmd_line);
 }
 
 int
