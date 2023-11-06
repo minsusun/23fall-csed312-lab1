@@ -155,7 +155,7 @@ process_wait (tid_t child_tid)
   struct list *child_list = &(thread_current () -> child_list);
   struct list_elem *elem;
 
-  for (elem = list_begin (child_list); elem != list_end; elem = list_next (elem))
+  for (elem = list_begin (child_list); elem != list_end (child_list); elem = list_next (elem))
   {
     struct thread *child = list_entry (elem, struct thread, childelem);
     if (child -> tid == child_tid)
@@ -165,6 +165,7 @@ process_wait (tid_t child_tid)
       return pcb -> exitcode;
     }
   }
+  
   return -1;
 }
 
