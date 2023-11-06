@@ -142,7 +142,7 @@ syscall_exit(int status)
 }
 
 pid_t
-syscall_exec (const char *command)
+syscall_exec (const char *cmd_line)
 {
   return process_execute (command);
 }
@@ -154,33 +154,33 @@ syscall_wait (pid_t pid)
 }
 
 bool
-syscall_create (const char *filename, size_t size)
+syscall_create (const char *file, unsigned initial_size)
 {
-  if (!is_valid_vaddr (filename))
+  if (!is_valid_vaddr (file))
     syscall_exit (-1);
-  return filesys_create (filename, size);
+  return filesys_create (file, initial_size);
 }
 
 bool
-syscall_remove (const char *filename)
+syscall_remove (const char *file)
 {
-  if (!is_valid_vaddr (filename))
+  if (!is_valid_vaddr (file))
     syscall_exit (-1);
-  return filesys_remove (filename);
+  return filesys_remove (file);
 }
 
 int
-syscall_open (const char *filename)
+syscall_open (const char *file)
 {
-  if (!is_valid_vaddr (filename))
+  if (!is_valid_vaddr (file))
     syscall_exit (-1);
   
-  struct file *file = filesys_open (filename);
-  if(file == NULL)
+  struct file *file_ = filesys_open (file);
+  if(file_ == NULL)
     return -1;
   
   struct pcb *pcb = thread_current () -> pcb;
-  pcb -> fdtable[pcb -> fdcount] = file;
+  pcb -> fdtable[pcb -> fdcount] = file_;
   
   return pcb -> fdcount++;
 }
@@ -193,7 +193,7 @@ syscall_filesize (int fd)
 }
 
 int
-syscall_read (int fd, void *buffer, size_t size)
+syscall_read (int fd, void *buffer, unsigned size)
 {
   struct pcb *pcb = thread_current () -> pcb;
   int fdcount = pcb -> fdcount;
@@ -210,7 +210,7 @@ syscall_read (int fd, void *buffer, size_t size)
 }
 
 int
-syscall_write (int fd, void *buffer, size_t size)
+syscall_write (int fd, void *buffer, unsigned size)
 {
   struct pcb *pcb = thread_current () -> pcb;
   int fdcount = pcb -> fdcount;
@@ -236,7 +236,7 @@ syscall_write (int fd, void *buffer, size_t size)
 }
 
 void
-syscall_seek (int fd, size_t pos)
+syscall_seek (int fd, unsigned position)
 {
   struct pcb *pcb = thread_current () -> pcb;
   int fdcount = pcb -> fdcount;
@@ -245,11 +245,11 @@ syscall_seek (int fd, size_t pos)
   {
     struct file *file = pcb -> fdtable[fd];
     if (file != NULL)
-      file_seek (file, pos);
+      file_seek (file, position);
   }
 }
 
-size_t
+unsigned
 syscall_tell (int fd)
 {
   struct pcb *pcb = thread_current () -> pcb;
