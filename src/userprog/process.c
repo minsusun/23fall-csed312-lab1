@@ -21,6 +21,9 @@
 /* Lab2 - userProcess */
 // #include "devices/timer.h"
 
+/* Lab2 - fileSystem */
+#include "userprog/syscall.h"
+
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
@@ -175,6 +178,13 @@ process_exit (void)
 {
   struct thread *cur = thread_current ();
   uint32_t *pd;
+
+  /* Lab2 - systemCall */
+  int i;
+  for (i = cur -> pcb -> fdcount - 1; i > 1; i--)
+    syscall_close (i);
+  
+  palloc_free_page (cur -> pcb -> fdtable);
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */

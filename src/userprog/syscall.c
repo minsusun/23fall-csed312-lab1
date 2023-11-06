@@ -11,12 +11,20 @@
 #include "filesys/file.h"
 #include "filesys/filesys.h"
 
+/* Lab2 - fileSystem */
+#include "threads/synch.h"
+
+struct lock file_lock;
+
 static void syscall_handler (struct intr_frame *);
 
 void
 syscall_init (void) 
 {
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
+
+  /* Lab2 - fileSystem */
+  lock_init (&file_lock);
 }
 
 static void
@@ -173,12 +181,20 @@ syscall_remove (const char *file)
 int
 syscall_open (const char *file)
 {
+  lock_acquire (&file_lock);
+
   if (!is_valid_vaddr (file))
+  {
+    lock_release (&file_lock);
     syscall_exit (-1);
+  }
   
   struct file *file_ = filesys_open (file);
   if(file_ == NULL)
+  {
+    lock_release (&file_lock);
     return -1;
+  }
   
   struct thread *thread = thread_current ();
   struct pcb *pcb = thread -> pcb;
@@ -188,6 +204,8 @@ syscall_open (const char *file)
     file_deny_write (file_);
 
   pcb -> fdtable[pcb -> fdcount] = file_;
+
+  lock_release (&file_lock);
   
   return pcb -> fdcount++;
 }
@@ -212,8 +230,16 @@ syscall_read (int fd, void *buffer, unsigned size)
   if (file == NULL)
     syscall_exit (-1);
   
-  return file_read (file, buffer, size);
+  /* Lab2 - fileSystem */
+  lock_acquire (&file_lock);
+  
+  int read_size = file_read (file, buffer, size);
+  
+  lock_release (&file_lock);
+  
+  return read_size;
 
+  //return file_read (file, buffer, size);
 }
 
 int
@@ -228,7 +254,12 @@ syscall_write (int fd, void *buffer, unsigned size)
   
   if (fd == 1)
   {
+    lock_acquire (&file_lock);
+    
     putbuf (buffer, size);
+    
+    lock_release(&file_lock);
+    
     return size;
   }
   else
@@ -238,7 +269,16 @@ syscall_write (int fd, void *buffer, unsigned size)
     if (file == NULL)
       syscall_exit (-1);
     
-    return file_write (file, buffer, size);
+    /* Lab2 - fileSystem */
+    lock_acquire (&file_lock);
+    
+    int write_size = file_write (file, buffer, size);
+    
+    lock_release (&file_lock);
+    
+    return write_size;
+    
+    //return file_write (file, buffer, size);
   }
 }
 
