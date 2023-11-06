@@ -36,6 +36,9 @@ struct pcb
       struct semaphore load;
       struct semaphore wait;
 
+      /* ROX */
+      struct file *_file;
+
       /* File Descriptor */
       int fdcount;
       struct file **fdtable;

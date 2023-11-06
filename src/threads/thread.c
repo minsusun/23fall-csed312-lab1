@@ -212,6 +212,8 @@ thread_create (const char *name, int priority,
   sema_init (&(pcb -> load), 0);
   sema_init (&(pcb -> wait), 0);
 
+  pcb -> _file = NULL;
+
   pcb -> fdtable = palloc_get_page (PAL_ZERO);
   pcb -> fdcount = 2;
 

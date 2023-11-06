@@ -165,7 +165,7 @@ process_wait (tid_t child_tid)
       return pcb -> exitcode;
     }
   }
-  
+
   return -1;
 }
 
@@ -311,6 +311,10 @@ load (const char *file_name, void (**eip) (void), void **esp)
       printf ("load: %s: open failed\n", file_name);
       goto done; 
     }
+  
+  /* Lab2 - systemCall */
+  /* ROX */
+  t -> pcb -> _file = file;
 
   /* Read and verify executable header. */
   if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr

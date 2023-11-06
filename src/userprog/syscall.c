@@ -5,6 +5,7 @@
 #include "threads/thread.h"
 
 /* Lab2 - userProcess */
+#include <string.h>
 #include "devices/shutdown.h"
 #include "threads/vaddr.h"
 #include "filesys/file.h"
@@ -179,7 +180,13 @@ syscall_open (const char *file)
   if(file_ == NULL)
     return -1;
   
-  struct pcb *pcb = thread_current () -> pcb;
+  struct thread *thread = thread_current ();
+  struct pcb *pcb = thread -> pcb;
+
+  /* ROX */
+  if (pcb -> _file != NULL && strcmp (thread -> name, file) == 0)
+    file_deny_write (file_);
+
   pcb -> fdtable[pcb -> fdcount] = file_;
   
   return pcb -> fdcount++;
