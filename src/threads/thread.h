@@ -30,9 +30,13 @@ typedef int tid_t;
 /* Lab2 - systemCall*/
 struct pcb
    {
+      int exitcode;
+      
+      /* status */
       bool isexited;
       bool isloaded;
-      int exitcode;
+
+      /* sync for load & wait */
       struct semaphore load;
       struct semaphore wait;
 

@@ -61,11 +61,9 @@ process_execute (const char *command)
     return TID_ERROR;
   strlcpy (cmd_copy, command, PGSIZE);
 
-  char *filename;
-
   /* Make a copy of command which will be used
      for containing the parsed filename from command. */
-  filename = palloc_get_page (0);
+  char *filename = palloc_get_page (0);
   if (filename == NULL)
     return TID_ERROR;
   strlcpy (filename, command, PGSIZE);
@@ -78,12 +76,15 @@ process_execute (const char *command)
 
   /* Create a new thread to execute FILE_NAME. */
   /* Lab2 - userProcess */
+  
   // tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
   tid = thread_create (filename, PRI_DEFAULT, start_process, cmd_copy);
+  
   if (tid == TID_ERROR)
-  //  palloc_free_page (fn_copy); 
+    // palloc_free_page (fn_copy); 
     palloc_free_page (cmd_copy);
   else
+    /* sync for process load */
     sema_down (&(thread_get_child_pcb (tid) -> load));
 
   palloc_free_page (filename);
@@ -114,9 +115,12 @@ start_process (void *command_)
   // success = load (file_name, &if_.eip, &if_.esp);
   char **argv = palloc_get_page(0);
   int argc = parse_arguments (command, argv);
+  
   success = load (argv[0], &if_.eip, &if_.esp);
+  
   if (success)
     store_arguments (argv, argc, &if_.esp);
+  
   palloc_free_page (argv);
 
   /* Lab2 - userProcess */
@@ -127,16 +131,8 @@ start_process (void *command_)
 
   /* If load failed, quit. */
   if (!success) 
-  //   thread_exit ();
+    // thread_exit ();
     syscall_exit (-1);
-  
-  /*
-  // Move to thread_create
-  struct thread *thread = thread_current ();
-  thread -> pcb = palloc_get_page (0);
-  thread -> pcb -> fdtable = palloc_get_page (PAL_ZERO);
-  thread -> pcb -> fdcount = 2;
-  */
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -181,26 +177,18 @@ process_wait (tid_t child_tid)
   return -1;
   */
 
-  // struct pcb *pcb = thread_get_child_pcb (child_tid);
   struct thread *child = thread_get_child (child_tid);
 
-  // if (pcb == NULL || pcb -> exitcode == -2 || !pcb -> isloaded)
   if (child == NULL)
     return -1;
   
   struct pcb *pcb = child -> pcb;
   
-  if (pcb == NULL || pcb -> exitcode == -2 || !pcb -> isloaded)
+  if (pcb == NULL || !pcb -> isloaded)
     return -1;
   
   sema_down (&(pcb -> wait));
   int exitcode = pcb -> exitcode;
-  
-  /*
-  sema_down (&(pcb -> wait));
-  exitcode = pcb -> exitcode;
-  pcb -> exitcode = -2;
-  */
 
   list_remove (&(child -> childelem));
   palloc_free_page (child -> pcb);
@@ -217,6 +205,7 @@ process_exit (void)
   uint32_t *pd;
 
   /* Lab2 - systemCall */
+  /* close all file descriptors */
   int i;
   for (i = cur -> pcb -> fdcount - 1; i > 1; i--)
     syscall_close (i);
@@ -243,7 +232,6 @@ process_exit (void)
   /* Lab2 - systemCall */
   cur -> pcb -> isexited = true;
   sema_up (&(cur -> pcb -> wait));
-  // list_remove (&(cur -> childelem));
 }
 
 /* Sets up the CPU for running user code in the current
@@ -261,7 +249,7 @@ process_activate (void)
      interrupts. */
   tss_update ();
 }
-
+
 /* We load ELF binaries.  The following definitions are taken
    from the ELF specification, [ELF1], more-or-less verbatim.  */
 
@@ -442,6 +430,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
   /* Start address. */
   *eip = (void (*) (void)) ehdr.e_entry;
 
+  /* Lab2 - systemCall */
+  /* sync process load */
   t -> pcb -> isloaded = true;
 
   success = true;
@@ -451,7 +441,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   file_close (file);
   return success;
 }
-
+
 /* load() helpers. */
 
 static bool install_page (void *upage, void *kpage, bool writable);
@@ -608,6 +598,7 @@ void parse_filename (char *command)
   command = strtok_r (command, " ", &saveptr);
 }
 
+/* parse arguments from command to argv and return argc */
 int
 parse_arguments (char *command, char **argv)
 {
@@ -621,6 +612,8 @@ parse_arguments (char *command, char **argv)
   return argc;
 }
 
+/* store arguments and initialize the execution
+  with the stack frame of esp */
 void store_arguments (char **argv, int argc, void **esp)
 {
   int i;

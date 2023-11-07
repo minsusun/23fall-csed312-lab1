@@ -407,7 +407,7 @@ thread_get_recent_cpu (void)
   /* Not yet implemented. */
   return 0;
 }
-
+
 /* Idle thread.  Executes when no other thread is ready to run.
 
    The idle thread is initially put on the ready list by
@@ -456,7 +456,7 @@ kernel_thread (thread_func *function, void *aux)
   function (aux);       /* Execute the thread function. */
   thread_exit ();       /* If function() returns, kill the thread. */
 }
-
+
 /* Returns the running thread. */
 struct thread *
 running_thread (void) 
@@ -613,11 +613,14 @@ allocate_tid (void)
 
   return tid;
 }
-
+
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 
+/* Lab2 - systemCall & fileSystem */
+/* Return thread pointer to the child of current process
+  matching with child_tid. */
 struct thread *
 thread_get_child (tid_t child_tid)
 {
@@ -627,6 +630,7 @@ thread_get_child (tid_t child_tid)
   for (elem = list_begin (child_list); elem != list_end (child_list); elem = list_next (elem))
   {
     struct thread *child = list_entry (elem, struct thread, childelem);
+    
     if (child -> tid == child_tid)
       return child;
   }
@@ -634,6 +638,7 @@ thread_get_child (tid_t child_tid)
   return NULL;
 }
 
+/* Return pcb pointer of child of current process. */
 struct pcb *
 thread_get_child_pcb (tid_t child_tid)
 {

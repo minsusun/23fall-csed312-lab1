@@ -15,8 +15,6 @@
 #include "threads/synch.h"
 
 struct lock file_lock;
-// struct semaphore rw, general;
-// int reads;
 
 static void syscall_handler (struct intr_frame *);
 
@@ -27,9 +25,6 @@ syscall_init (void)
 
   /* Lab2 - fileSystem */
   lock_init (&file_lock);
-  // sema_init (&rw, 1);
-  // sema_init (&general, 1);
-  // reads = 0;
 }
 
 static void
@@ -120,7 +115,7 @@ syscall_handler (struct intr_frame *f)
 }
 
 /* Lab2 - userProcess */
-
+/* Store n arguments to the stack frame */
 void
 load_arguments (int *esp, int *argv, int n)
 {
@@ -133,6 +128,7 @@ load_arguments (int *esp, int *argv, int n)
   }
 }
 
+/* Validate the given virtual address is in user space */
 bool
 is_valid_vaddr (void *vaddr)
 {
@@ -151,12 +147,15 @@ syscall_exit(int status)
   struct thread *thread = thread_current ();
   thread -> pcb -> exitcode = status;
 
+  /* Lab2 - fileSystem */
+  /* sync load & wait process */
   // sema_up (&(thread -> pcb -> load));
   // sema_up (&(thread -> pcb -> wait));
 
   if (!thread -> pcb -> isloaded)
     sema_up (&(thread -> pcb -> load));
 
+  /* termination message */
   printf ("%s: exit(%d)\n", thread -> name, status);
   thread_exit ();
 }
@@ -166,6 +165,7 @@ syscall_exec (const char *cmd_line)
 {
   pid_t pid = process_execute (cmd_line);
   struct pcb *pcb = thread_get_child_pcb (pid);
+  
   if (pid == -1 || !pcb -> isloaded)
     return -1;
   
@@ -185,6 +185,7 @@ syscall_create (const char *file, unsigned initial_size)
 {
   if (!is_valid_vaddr (file))
     syscall_exit (-1);
+  
   return filesys_create (file, initial_size);
 }
 
@@ -193,12 +194,14 @@ syscall_remove (const char *file)
 {
   if (!is_valid_vaddr (file))
     syscall_exit (-1);
+  
   return filesys_remove (file);
 }
 
 int
 syscall_open (const char *file)
 {
+  /* Lab2 - fileSystem */
   lock_acquire (&file_lock);
 
   if (!is_valid_vaddr (file))
@@ -208,6 +211,7 @@ syscall_open (const char *file)
   }
   
   struct file *file_ = filesys_open (file);
+  
   if(file_ == NULL)
   {
     lock_release (&file_lock);
@@ -217,7 +221,7 @@ syscall_open (const char *file)
   struct thread *thread = thread_current ();
   struct pcb *pcb = thread -> pcb;
 
-  /* ROX */
+  /* ROX, Deny writes to executables */
   if (pcb -> _file != NULL && strcmp (thread -> name, file) == 0)
     file_deny_write (file_);
 
@@ -250,22 +254,10 @@ syscall_read (int fd, void *buffer, unsigned size)
   
   /* Lab2 - fileSystem */
   lock_acquire (&file_lock);
-
-  // sema_down (&general);
-  // reads++;
-  // if (reads == 1)
-  //   sema_down (&rw);
-  // sema_up (&general);
   
   int read_size = file_read (file, buffer, size);
   
   lock_release (&file_lock);
-
-  // sema_down (&general);
-  // reads--;
-  // if (reads == 0)
-  //   sema_up (&rw);
-  // sema_up (&general);
   
   return read_size;
 
@@ -278,10 +270,11 @@ syscall_write (int fd, void *buffer, unsigned size)
   struct pcb *pcb = thread_current () -> pcb;
   int fdcount = pcb -> fdcount;
 
-  /* fd=0 cannot be used to write on */
+  /* fd=0(stdin) cannot be used to write on */
   if (!is_valid_vaddr (buffer) || fd < 1 || fd >= fdcount)
     syscall_exit (-1);
   
+  /* stdout */
   if (fd == 1)
   {
     lock_acquire (&file_lock);
@@ -301,14 +294,10 @@ syscall_write (int fd, void *buffer, unsigned size)
     
     /* Lab2 - fileSystem */
     lock_acquire (&file_lock);
-
-    // sema_down (&rw);
     
     int write_size = file_write (file, buffer, size);
     
     lock_release (&file_lock);
-
-    // sema_up (&rw);
     
     return write_size;
     
@@ -325,6 +314,7 @@ syscall_seek (int fd, unsigned position)
   if (fd >= 0 && fd < fdcount)
   {
     struct file *file = pcb -> fdtable[fd];
+    
     if (file != NULL)
       file_seek (file, position);
   }
@@ -340,6 +330,7 @@ syscall_tell (int fd)
     return -1;
   
   struct file *file = pcb -> fdtable[fd];
+  
   if (file == NULL)
     return -1;
   
@@ -356,11 +347,14 @@ syscall_close (int fd)
     syscall_exit (-1);
   
   struct file * file = pcb -> fdtable[fd];
+  
   if (file == NULL)
     return;
   
+  /* Reorder file descriptor table */
   for (i = fd; i < fdcount; i++)
     pcb -> fdtable[i] = pcb -> fdtable[i + 1];
+  
   pcb -> fdcount --;
 
   file_close (file);

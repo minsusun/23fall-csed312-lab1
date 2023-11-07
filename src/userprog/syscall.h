@@ -9,14 +9,14 @@
 void syscall_init (void);
 
 /* Lab2 - userProcess */
-void load_arguments (int *esp, int *argv, int n);
-bool is_valid_vaddr (void *vaddr);
+void        load_arguments (int *esp, int *argv, int n);
+bool        is_valid_vaddr (void *vaddr);
 
 /* Lab2 - systemCall(userProcess) */
-void    syscall_halt (void);
-void    syscall_exit (int status);
-pid_t   syscall_exec (const char *cmd_line);
-int     syscall_wait (pid_t pid);
+void        syscall_halt (void);
+void        syscall_exit (int status);
+pid_t       syscall_exec (const char *cmd_line);
+int         syscall_wait (pid_t pid);
 
 /* Lab2 - systemCall(fileManipulation) */
 bool        syscall_create (const char *file, unsigned initial_size);
