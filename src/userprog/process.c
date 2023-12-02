@@ -569,7 +569,7 @@ setup_stack (void **esp)
 
   /* lab3 - frame table */
   // kpage = palloc_get_page (PAL_USER | PAL_ZERO);
-  kpage = falloc_get_page (PAL_USER | PAL_ZERO, PHYSE_BASE - PGSIZE);
+  kpage = falloc_get_page (PAL_USER | PAL_ZERO, PHYS_BASE - PGSIZE);
   if (kpage != NULL) 
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
