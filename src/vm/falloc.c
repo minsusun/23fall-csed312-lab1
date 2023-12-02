@@ -29,7 +29,7 @@ falloc_get_page (enum palloc_flags flag, void *upage)
         entry -> t = thread_current ();
         list_push_back (&frame_table, &(entry -> list_elem));
     }
-    lock_releast (&frame_table_lock);
+    lock_release (&frame_table_lock);
     return kpage;
 }
 
@@ -42,7 +42,7 @@ falloc_free_page (void *kpage)
         syscall_exit (-1);
     list_remove (&(entry -> list_elem));
     palloc_free_page (entry -> kpage);
-    pagedir_clkear_page(entry -> t -> pagedir, entry -> upage);
+    pagedir_clear_page(entry -> t -> pagedir, entry -> upage);
     lock_release (&frame_table_lock);
 }
 
