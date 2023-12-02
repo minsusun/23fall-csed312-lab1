@@ -42,20 +42,35 @@ spt_destroy_func (struct hash_elem *elem, void *aux)
 }
 
 struct spte *
-spalloc_get_page (struct hash *spt, void *upage, struct file *file, off_t ofs, uint32_t read_bytes, uint32_t zero_bytes, bool writable)
+spalloc (struct hash *spt, void *upage, void *kpage, enum spage_type type)
 {
     struct spte *entry = (struct spte *)malloc (sizeof (struct spte *));
-
+    entry -> type = type;
     entry -> upage = upage;
-    entry -> kpage = NULL;
+    entry -> kpage = kpage;
+    hash_insert (spt, &(entry -> hash_elem));
+    return entry;
+}
 
+void
+spalloc_zero (struct hash *spt, void *upage)
+{
+    struct spte *entry = spalloc(spt, upage, NULL, SPAGE_ZERO);
+}
+
+void
+spalloc_frame (struct hash *spt, void *upage, void *kpage)
+{
+    struct spte *entry = spalloc(spt, upage, kpage, SPAGE_FRAME);
+}
+
+void
+spalloc_file (struct hash *spt, void *upage, struct file *file, off_t ofs, uint32_t read_bytes, uint32_t zero_bytes, bool writable)
+{
+    struct spte *entry = spalloc(spt, upage, NULL, SPAGE_FILE);
     entry -> file = file;
     entry -> ofs = ofs;
     entry -> read_bytes = read_bytes;
     entry -> zero_bytes = zero_bytes;
     entry -> writable = writable;
-
-    hash_insert (spt, &(entry -> hash_elem));
-
-    return entry;
 }
