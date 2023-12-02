@@ -38,6 +38,9 @@
 #include "filesys/fsutil.h"
 #endif
 
+/* Lab3 - frame table */
+#include "vm/falloc.h"
+
 /* Page directory with kernel mappings only. */
 uint32_t *init_page_dir;
 
@@ -126,6 +129,9 @@ main (void)
   locate_block_devices ();
   filesys_init (format_filesys);
 #endif
+
+  /* lab3 - frame table */
+  frame_table_init ();
 
   printf ("Boot complete.\n");
   
