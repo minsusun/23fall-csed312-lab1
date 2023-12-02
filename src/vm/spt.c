@@ -28,8 +28,8 @@ bool
 // typedef bool hash_less_func (const struct hash_elem *a, const struct hash_elem *b, void *aux);
 spt_less_func (const struct hash_elem *e1, const struct hash_elem *e2, void *aux)
 {
-    void *p1 = hash_entry (e1, struct spte, hash_elem) -> kpage;
-    void *p2 = hash_entry (e2, struct spte, hash_elem) -> kpage;
+    void *p1 = hash_entry (e1, struct spte, hash_elem) -> upage;
+    void *p2 = hash_entry (e2, struct spte, hash_elem) -> upage;
     return p1 < p2;
 }
 
