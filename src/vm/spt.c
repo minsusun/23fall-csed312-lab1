@@ -4,6 +4,10 @@
 #include "filesys/off_t.h"
 #include "vm/spt.h"
 
+unsigned spt_hash_func (struct hash_elem *hash_elem, void *aux);
+bool spt_less_func (const struct hash_elem *e1, const struct hash_elem *e2, void *aux);
+void spt_destroy_func (struct hash_elem *elem, void *aux);
+
 void
 init_spt (struct hash *spt)
 {   
