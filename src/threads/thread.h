@@ -134,6 +134,9 @@ struct thread
    /* lab3 - supplemental page table */
    struct hash spt;
 
+   /* lab3 - stack growth */
+   void *esp;
+
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
   };

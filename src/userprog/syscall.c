@@ -39,6 +39,9 @@ syscall_handler (struct intr_frame *f)
   if (!is_valid_vaddr (f -> esp))
     syscall_exit (-1);
 
+  /* lab3 - stack growth */
+  thread_current () -> esp = f -> esp;
+
   int argv[3];
 
   switch (*(int *)(f -> esp))
