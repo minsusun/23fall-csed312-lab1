@@ -24,6 +24,12 @@
 /* Lab2 - fileSystem */
 #include "userprog/syscall.h"
 
+/* lab3 - frame table */
+#include "vm/falloc.h"
+
+/* lab3 - supplemental page table */
+#include "vm/spt.h"
+
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
@@ -210,6 +216,9 @@ process_exit (void)
   for (i = cur -> pcb -> fdcount - 1; i > 1; i--)
     syscall_close (i);
   
+  /* lab3 - supplemental page table */
+  destroy_spt (&(cur -> spt));
+
   palloc_free_page (cur -> pcb -> fdtable);
 
   /* Destroy the current process's page directory and switch back
@@ -558,14 +567,18 @@ setup_stack (void **esp)
   uint8_t *kpage;
   bool success = false;
 
-  kpage = palloc_get_page (PAL_USER | PAL_ZERO);
+  /* lab3 - frame table */
+  // kpage = palloc_get_page (PAL_USER | PAL_ZERO);
+  kpage = falloc_get_page (PAL_USER | PAL_ZERO, PHYSE_BASE - PGSIZE);
   if (kpage != NULL) 
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
         *esp = PHYS_BASE;
       else
-        palloc_free_page (kpage);
+        /* lab3 - frame table */
+        // palloc_free_page (kpage);
+        falloc_free_page (kpage);
     }
   return success;
 }

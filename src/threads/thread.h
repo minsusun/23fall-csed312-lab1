@@ -5,6 +5,9 @@
 #include <list.h>
 #include <stdint.h>
 
+/* lab3 - supplemental page table */
+#include <hash.h>
+
 /* Lab2 - systemCall */
 #include "threads/synch.h"
 
@@ -127,6 +130,9 @@ struct thread
     struct list child_list;
     struct list_elem childelem;
 #endif
+
+   /* lab3 - supplemental page table */
+   struct hash spt;
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */

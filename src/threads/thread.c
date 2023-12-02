@@ -15,6 +15,9 @@
 #include "userprog/process.h"
 #endif
 
+/* lab3 - supplemental page table */
+#include "vm/spt.h"
+
 /* Random value for struct thread's `magic' member.
    Used to detect stack overflow.  See the big comment at the top
    of thread.h for details. */
@@ -229,6 +232,9 @@ thread_create (const char *name, int priority,
   child -> parent = parent;
 
   list_push_back (&(parent -> child_list), &(child -> childelem));
+
+  /* lab3 - supplemental page table */
+  init_spt (&(t -> spt));
 
   /* Add to run queue. */
   thread_unblock (t);
