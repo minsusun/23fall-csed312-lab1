@@ -3,6 +3,8 @@
 #ifndef VM_SPT_H
 #define VM_SPT_H
 
+#include "filesys/off_t.h"
+
 enum spage_type {
     SPAGE_ZERO,
     SPAGE_FRAME,
