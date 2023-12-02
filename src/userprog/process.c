@@ -219,6 +219,9 @@ process_exit (void)
   /* lab3 - supplemental page table */
   destroy_spt (&(cur -> spt));
 
+  /* lab3 - lazy loading */
+  file_close (cur -> pcb -> _file);
+
   palloc_free_page (cur -> pcb -> fdtable);
 
   /* Destroy the current process's page directory and switch back
@@ -447,7 +450,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
  done:
   /* We arrive here whether the load is successful or not. */
-  file_close (file);
+  /* lab3 - lazy loading */
+  // file_close (file);
   return success;
 }
 
@@ -531,30 +535,35 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
-      /* Get a page of memory. */
-      uint8_t *kpage = palloc_get_page (PAL_USER);
-      if (kpage == NULL)
-        return false;
-
-      /* Load this page. */
-      if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
-        {
-          palloc_free_page (kpage);
-          return false; 
-        }
-      memset (kpage + page_read_bytes, 0, page_zero_bytes);
-
-      /* Add the page to the process's address space. */
-      if (!install_page (upage, kpage, writable)) 
-        {
-          palloc_free_page (kpage);
-          return false; 
-        }
+      /* lab3 - lazy loading */
+      ///* Get a page of memory. */
+      //uint8_t *kpage = palloc_get_page (PAL_USER);
+      //if (kpage == NULL)
+      //  return false;
+      //
+      ///* Load this page. */
+      //if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
+      //  {
+      //    palloc_free_page (kpage);
+      //    return false; 
+      //  }
+      //memset (kpage + page_read_bytes, 0, page_zero_bytes);
+      //
+      ///* Add the page to the process's address space. */
+      //if (!install_page (upage, kpage, writable)) 
+      //  {
+      //    palloc_free_page (kpage);
+      //    return false; 
+      //  }
+      spalloc_file (&(thread_current () -> spt), upage, file, ofs, page_read_bytes, page_zero_bytes, writable);
 
       /* Advance. */
       read_bytes -= page_read_bytes;
       zero_bytes -= page_zero_bytes;
       upage += PGSIZE;
+       
+      /* lab3 - lazy loading */
+      ofs += page_read_bytes;
     }
   return true;
 }
@@ -574,7 +583,10 @@ setup_stack (void **esp)
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
+      {
+        spalloc_frame (&(thread_current () -> spt), PHYS_BASE - PGSIZE, kpage);
         *esp = PHYS_BASE;
+      }
       else
         /* lab3 - frame table */
         // palloc_free_page (kpage);

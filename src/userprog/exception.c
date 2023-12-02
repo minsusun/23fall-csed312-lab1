@@ -8,6 +8,10 @@
 /* Lab2 - systemCall */
 #include "userprog/syscall.h"
 
+/* lab3 - lazy loading */
+#include "threads/vaddr.h"
+#include "vm/spt.h"
+
 /* Number of page faults processed. */
 static long long page_fault_cnt;
 
@@ -151,9 +155,19 @@ page_fault (struct intr_frame *f)
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
 
-  /* Lab2 - systemCall */
-  /* temporary handling */
-  syscall_exit (-1);
+   /* Lab2 - systemCall */
+   /* temporary handling */
+   /* lab3 - lazy loading */
+   void *upage = pg_round_down (fault_addr);
+
+   if (is_kernel_vaddr (fault_addr) || !not_present)
+      syscall_exit (-1);
+
+   if (load_page (&(thread_current () -> spt), upage))
+      return;
+   
+   syscall_exit (-1);
+
 
   /* To implement virtual memory, delete the rest of the function
      body, and replace it with code that brings in the page to

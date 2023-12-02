@@ -35,4 +35,7 @@ void spalloc_zero (struct hash *spt, void *upage);
 void spalloc_frame (struct hash *pst, void *upage, void *kpage);
 void spalloc_file (struct hash *spt, void *upage, struct file *file, off_t ofs, uint32_t read_bytes, uint32_t zero_bytes, bool writable);
 
+bool load_page (struct hash *spt, void *upage);
+struct spte *get_spte (struct hash *spt, void *upage);
+
 #endif
