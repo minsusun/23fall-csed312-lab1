@@ -44,7 +44,7 @@ spt_destroy_func (struct hash_elem *elem, void *aux)
 struct spte *
 spalloc (struct hash *spt, void *upage, void *kpage, enum spage_type type)
 {
-    struct spte *entry = (struct spte *)malloc (sizeof (struct spte *));
+    struct spte *entry = (struct spte *)malloc (sizeof (struct spte));
     entry -> type = type;
     entry -> upage = upage;
     entry -> kpage = kpage;
