@@ -24,6 +24,9 @@
 /* Lab2 - fileSystem */
 #include "userprog/syscall.h"
 
+/* lab3 - supplemental page table */
+#include "vm/spt.h"
+
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
@@ -210,6 +213,9 @@ process_exit (void)
   for (i = cur -> pcb -> fdcount - 1; i > 1; i--)
     syscall_close (i);
   
+  /* lab3 - supplemental page table */
+  destroy_spt (&(cur -> spt));
+
   palloc_free_page (cur -> pcb -> fdtable);
 
   /* Destroy the current process's page directory and switch back
