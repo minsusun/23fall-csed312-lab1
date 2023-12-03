@@ -109,6 +109,17 @@ syscall_handler (struct intr_frame *f)
       load_arguments (f -> esp, argv, 1);
       syscall_close (argv[0]);
       break;
+    
+    /* lab3 - MMF */
+    case SYS_MMAP:
+      get_argument (f -> esp, argv, 1);
+      syscall_mmap ((int) argv[0], (void *)argv[1]);
+      break;
+    
+    case SYS_MUNMAP:
+      get_argument (f -> esp, argv, 2);
+      syscall_munmap ((int) argv[0]);
+      break;
 
     default:
       /* temporary handling */
@@ -361,4 +372,17 @@ syscall_close (int fd)
   pcb -> fdcount --;
 
   file_close (file);
+}
+
+/* lab3 - MMF */
+int
+syscall_mmap (int fd, void *vaddr)
+{
+  
+}
+
+int
+syscall_munmap (int mapid)
+{
+
 }
