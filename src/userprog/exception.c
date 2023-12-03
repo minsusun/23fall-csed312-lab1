@@ -162,8 +162,17 @@ page_fault (struct intr_frame *f)
 
    if (is_kernel_vaddr (fault_addr) || !not_present)
       syscall_exit (-1);
+   
+   struct hash *spt = &(thread_current () -> spt);
 
-   if (load_page (&(thread_current () -> spt), upage))
+   void *esp;
+   if (user) esp = f -> esp;
+   else esp = thread_current() -> esp;
+   
+   if (esp - 32 <= fault_addr && PHYS_BASE - MAX_STACK_SIZE <= fault_addr && !get_spte(spt, upage))
+      spalloc_zero (spt, upage);
+   
+   if(load_page (spt, upage))
       return;
    
    syscall_exit (-1);
