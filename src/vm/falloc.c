@@ -1,8 +1,10 @@
 #include "threads/malloc.h"
 #include "threads/palloc.h"
 #include "threads/thread.h"
+#include "userprog/pagedir.h"
 #include "userprog/syscall.h"
 #include "vm/falloc.h"
+#include "vm/spt.h"
 
 static struct list frame_table;
 static struct lock frame_table_lock;
@@ -26,7 +28,7 @@ falloc_get_page (enum palloc_flags flag, void *upage)
         entry = (struct fte *) malloc (sizeof (struct fte));
         entry -> kpage = kpage;
         entry -> upage = upage;
-        entry -> t = thread_current ();
+        entry -> thread = thread_current ();
         list_push_back (&frame_table, &(entry -> list_elem));
     }
     lock_release (&frame_table_lock);
@@ -42,7 +44,7 @@ falloc_free_page (void *kpage)
         syscall_exit (-1);
     list_remove (&(entry -> list_elem));
     palloc_free_page (entry -> kpage);
-    pagedir_clear_page(entry -> t -> pagedir, entry -> upage);
+    pagedir_clear_page(entry -> thread -> pagedir, entry -> upage);
     lock_release (&frame_table_lock);
 }
 
@@ -57,4 +59,26 @@ get_fte (void *kpage)
             return entry;
     }
     return NULL;
+}
+
+void
+evict_frame ()
+{
+    struct fte *entry;
+    for (struct list_elem *elem = list_begin (&frame_table); ; )
+    {
+        entry = list_entry (elem, struct fte, list_elem);
+        pagedir_set_accessed (entry -> thread -> pagedir, entry -> upage, false);
+        elem = list_next (elem);
+        if (pagedir_is_accessed (entry -> thread -> pagedir, entry -> upage))
+            break;
+    }
+
+    struct spte *spte = get_spte (&(thread_current () -> spt), entry ->upage);
+    spte -> type = SPAGE_SWAP;
+    spte -> swap_id = swap_out (entry -> kpage);
+
+    lock_acquire (&frame_table_lock);
+    falloc_free_page (entry -> kpage);
+    lock_release (&frame_table_lock);
 }

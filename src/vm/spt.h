@@ -8,6 +8,7 @@
 enum spage_type {
     SPAGE_ZERO,
     SPAGE_FRAME,
+    SPAGE_SWAP,
     SPAGE_FILE
 };
 
