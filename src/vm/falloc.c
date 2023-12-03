@@ -23,14 +23,18 @@ falloc_get_page (enum palloc_flags flag, void *upage)
     struct fte *entry;
     lock_acquire (&frame_table_lock);
     kpage = palloc_get_page (flag);
-    if (kpage != NULL)
+    if (kpage == NULL)
     {
-        entry = (struct fte *) malloc (sizeof (struct fte));
-        entry -> kpage = kpage;
-        entry -> upage = upage;
-        entry -> thread = thread_current ();
-        list_push_back (&frame_table, &(entry -> list_elem));
+        evict_frame ();
+        kpage = palloc_get_page (flag);
+        if (kpage == NULL)
+            return NULL;
     }
+    entry = (struct fte *) malloc (sizeof (struct fte));
+    entry -> kpage = kpage;
+    entry -> upage = upage;
+    entry -> thread = thread_current ();
+    list_push_back (&frame_table, &(entry -> list_elem));
     lock_release (&frame_table_lock);
     return kpage;
 }
