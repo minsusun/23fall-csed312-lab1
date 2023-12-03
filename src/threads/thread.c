@@ -20,6 +20,7 @@
 
 /* lab3 - MMF */
 #include <list.h>
+#include <stdlib.h>
 #include "filesys/file.h"
 
 /* Random value for struct thread's `magic' member.
@@ -663,7 +664,7 @@ thread_get_child_pcb (tid_t child_tid)
 struct mmf *
 init_mmf (int mmfid, void *upage, struct file *file)
 {
-  struct thread *thread = thread_currnet ();
+  struct thread *thread = thread_current ();
   struct hash *spt = &(thread -> spt);
   struct mmf *mmf = (struct mmf *) malloc (sizeof (struct mmf));
   

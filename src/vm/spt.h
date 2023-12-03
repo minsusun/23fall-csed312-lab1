@@ -8,6 +8,7 @@
 enum spage_type {
     SPAGE_ZERO,
     SPAGE_FRAME,
+    SPAGE_SWAP,
     SPAGE_FILE
 };
 
@@ -25,6 +26,8 @@ struct spte
     uint32_t read_bytes;
     uint32_t zero_bytes;
     bool writable;
+
+    int swap_id;
 };
 
 void init_spt (struct hash *spt);

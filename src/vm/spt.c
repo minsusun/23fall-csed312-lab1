@@ -9,6 +9,7 @@
 #include "userprog/syscall.h"
 #include "vm/falloc.h"
 #include "vm/spt.h"
+#include "vm/swap.h"
 
 unsigned spt_hash_func (struct hash_elem *hash_elem, void *aux);
 bool spt_less_func (const struct hash_elem *e1, const struct hash_elem *e2, void *aux);
@@ -106,6 +107,9 @@ load_page (struct hash *spt, void *upage)
             memset (kpage, 0, PGSIZE);
             break;
         case SPAGE_FRAME:
+            break;
+        case SPAGE_SWAP:
+            swap_in (entry, kpage);
             break;
         case SPAGE_FILE:
             if (!flag)
