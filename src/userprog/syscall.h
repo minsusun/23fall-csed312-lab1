@@ -31,6 +31,6 @@ void        syscall_close (int fd);
 
 /* lab3 - MMF */
 int         syscall_mmap (int fd, void *vaddr);
-int         syscall_munmap (int map_id);
+void        syscall_munmap (int map_id);
 
 #endif /* userprog/syscall.h */

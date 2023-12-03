@@ -381,7 +381,7 @@ syscall_mmap (int fd, void *vaddr)
   
 }
 
-int
+void
 syscall_munmap (int mapid)
 {
 
