@@ -151,3 +151,9 @@ get_spte (struct hash *spt, void *upage)
     else
         return elem;
 }
+
+void spdealloc (struct hash *spt, struct spte *entry)
+{
+    hash_delete (spt, &(entry -> hash_elem));
+    free (entry);
+}
