@@ -675,7 +675,7 @@ init_mmf (int mmfid, void *upage, struct file *file)
   off_t size = file_length (file);
 
   for (off_t ofs = 0; ofs < size; ofs += PGSIZE)
-    if (get_spte (spt, upage + ofs)) return NULL;
+    if (get_spte (spt, upage + ofs) != NULL) return NULL;
 
   for (off_t ofs = 0; ofs < size; ofs += PGSIZE)
   {

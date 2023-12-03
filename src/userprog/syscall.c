@@ -427,6 +427,7 @@ syscall_munmap (int mmfid)
   struct thread *thread = thread_current ();
   struct list *mmf_list = &(thread -> mmf_list);
   struct list_elem *elem;
+  struct hash *spt = &(thread -> spt);
   struct mmf *mmf;
 
   if (mmfid >= thread -> mmfid)
@@ -447,7 +448,6 @@ syscall_munmap (int mmfid)
   off_t size = file_length (mmf -> file);
   for (off_t ofs = 0; ofs < size; ofs += PGSIZE)
   {
-    struct hash *spt = &(thread -> spt);
     struct spte *entry = get_spte (spt, (mmf -> upage) + ofs);
     if (pagedir_is_dirty (thread -> pagedir, (mmf -> upage) + ofs))
       file_write_at (entry -> file, pagedir_get_page (thread -> pagedir, (mmf -> upage) + ofs), entry -> read_bytes, entry -> ofs);
@@ -456,5 +456,5 @@ syscall_munmap (int mmfid)
 
   list_remove (elem);
 
-  lock_acquire (&file_lock);
+  lock_release (&file_lock);
 }
