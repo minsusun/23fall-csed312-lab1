@@ -83,7 +83,7 @@ evict_frame ()
     spte -> type = SPAGE_SWAP;
     spte -> swap_id = swap_out (entry -> kpage);
 
-    lock_acquire (&frame_table_lock);
-    falloc_free_page (entry -> kpage);
     lock_release (&frame_table_lock);
+    falloc_free_page (entry -> kpage);
+    lock_acquire (&frame_table_lock);
 }
