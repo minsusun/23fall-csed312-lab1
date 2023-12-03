@@ -16,6 +16,8 @@
 
 /* lab3 - MMF */
 #include "threads/palloc.h"
+#include "userprog/pagedir.h"
+#include "vm/falloc.h"
 #include "vm/spt.h"
 
 struct lock file_lock;
@@ -116,12 +118,12 @@ syscall_handler (struct intr_frame *f)
     
     /* lab3 - MMF */
     case SYS_MMAP:
-      get_argument (f -> esp, argv, 1);
+      load_arguments (f -> esp, argv, 1);
       syscall_mmap ((int) argv[0], (void *)argv[1]);
       break;
     
     case SYS_MUNMAP:
-      get_argument (f -> esp, argv, 2);
+      load_arguments (f -> esp, argv, 2);
       syscall_munmap ((int) argv[0]);
       break;
 
@@ -426,7 +428,6 @@ syscall_munmap (int mmfid)
   struct list *mmf_list = &(thread -> mmf_list);
   struct list_elem *elem;
   struct mmf *mmf;
-  void *upage;
 
   if (mmfid >= thread -> mmfid)
     return;
@@ -447,10 +448,10 @@ syscall_munmap (int mmfid)
   for (off_t ofs = 0; ofs < size; ofs += PGSIZE)
   {
     struct hash *spt = &(thread -> spt);
-    struct spte *entry = get_spte (spt, upage + ofs);
-    if (pagedir_is_dirty (thread -> pagedir, upage + ofs))
-      file_write_at (entry -> file, pagedir_get_page (thread -> pagedir, upage + ofs), entry -> read_bytes, entry -> ofs);
-    page_delete (spt, entry);
+    struct spte *entry = get_spte (spt, (mmf -> upage) + ofs);
+    if (pagedir_is_dirty (thread -> pagedir, (mmf -> upage) + ofs))
+      file_write_at (entry -> file, pagedir_get_page (thread -> pagedir, (mmf -> upage) + ofs), entry -> read_bytes, entry -> ofs);
+    spdealloc (spt, entry);
   }
 
   list_remove (elem);

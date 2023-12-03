@@ -14,7 +14,8 @@ struct lock swap_lock;
 struct block *swap;
 struct bitmap *swap_table;
 
-void init_swap ()
+void
+init_swap ()
 {
     swap = block_get_role (BLOCK_SWAP);
     swap_table = bitmap_create(block_size(swap) / SECTORS_PER_PAGE);
@@ -22,7 +23,8 @@ void init_swap ()
     lock_init (&swap_lock);
 }
 
-void swap_in (struct spte *entry, void *kvaddr)
+void
+swap_in (struct spte *entry, void *kvaddr)
 {
     int swap_id = entry -> swap_id;
 
@@ -39,7 +41,8 @@ void swap_in (struct spte *entry, void *kvaddr)
         block_read (swap, swap_id * SECTORS_PER_PAGE + i, kvaddr + BLOCK_SECTOR_SIZE * i);
 }
 
-int swap_out (void *kvaddr)
+int
+swap_out (void *kvaddr)
 {
     lock_acquire (&swap_lock);
     
