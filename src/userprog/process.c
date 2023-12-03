@@ -216,6 +216,10 @@ process_exit (void)
   for (i = cur -> pcb -> fdcount - 1; i > 1; i--)
     syscall_close (i);
   
+  /* lab3 - MMF */
+  for (i = 0; i < cur -> mmfid; i++)
+    syscall_munmap (i);
+
   /* lab3 - supplemental page table */
   destroy_spt (&(cur -> spt));
 
