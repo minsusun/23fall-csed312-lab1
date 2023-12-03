@@ -49,6 +49,7 @@ falloc_free_page (void *kpage)
     list_remove (&(entry -> list_elem));
     palloc_free_page (entry -> kpage);
     pagedir_clear_page(entry -> thread -> pagedir, entry -> upage);
+    free (entry);
     lock_release (&frame_table_lock);
 }
 
