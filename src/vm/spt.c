@@ -1,12 +1,21 @@
 /* lab3 - supplemental page table */
 #include <hash.h>
+#include <string.h>
 
+#include "filesys/file.h"
 #include "filesys/off_t.h"
+#include "threads/palloc.h"
+#include "threads/vaddr.h"
+#include "userprog/syscall.h"
+#include "vm/falloc.h"
 #include "vm/spt.h"
+#include "vm/swap.h"
 
 unsigned spt_hash_func (struct hash_elem *hash_elem, void *aux);
 bool spt_less_func (const struct hash_elem *e1, const struct hash_elem *e2, void *aux);
 void spt_destroy_func (struct hash_elem *elem, void *aux);
+
+extern struct lock file_lock;
 
 void
 init_spt (struct hash *spt)
@@ -77,6 +86,74 @@ spalloc_file (struct hash *spt, void *upage, struct file *file, off_t ofs, uint3
     entry -> read_bytes = read_bytes;
     entry -> zero_bytes = zero_bytes;
     entry -> writable = writable;
+}
+
+bool
+load_page (struct hash *spt, void *upage)
+{
+    struct spte *entry = get_spte (spt, upage);
+    if (entry == NULL)
+        syscall_exit (-1);
+
+    void *kpage = falloc_get_page (PAL_USER, upage);
+    if (kpage == NULL)
+        syscall_exit (-1);
+    
+    bool flag = lock_held_by_current_thread (&file_lock);
+
+    switch (entry -> type)
+    {
+        case SPAGE_ZERO:
+            memset (kpage, 0, PGSIZE);
+            break;
+        case SPAGE_FRAME:
+            break;
+        case SPAGE_SWAP:
+            swap_in (entry, kpage);
+            break;
+        case SPAGE_FILE:
+            if (!flag)
+                lock_acquire (&file_lock);
+            if (file_read_at (entry -> file, kpage, entry -> read_bytes, entry -> ofs) != entry -> read_bytes)
+            {
+                falloc_free_page (kpage);
+                lock_release (&file_lock);
+                syscall_exit (-1);
+            }
+
+            memset (kpage + (entry -> read_bytes), 0, entry -> zero_bytes);
+            if(!flag)
+                lock_release (&file_lock);
+            break;
+        default:
+            syscall_exit (-1);
+    }
+
+    uint32_t *pagedir = thread_current () -> pagedir;
+    if (!pagedir_set_page (pagedir, upage, kpage, entry -> writable))
+    {
+        falloc_free_page (kpage);
+        syscall_exit (-1);
+    }
+
+    entry -> kpage = kpage;
+    entry -> type = SPAGE_FRAME;
+
+    return true;
+}
+
+struct spte *
+get_spte (struct hash *spt, void *upage)
+{
+    struct spte entry;
+    entry.upage = upage;
+    
+    struct hash_elem *elem = hash_find (spt, &(entry.hash_elem));
+
+    if (elem == NULL)
+        return NULL;
+    else
+        return elem;
 }
 
 void spdealloc (struct hash *spt, struct spte *entry)

@@ -18,6 +18,11 @@
 /* lab3 - supplemental page table */
 #include "vm/spt.h"
 
+/* lab3 - MMF */
+#include <list.h>
+#include <stdlib.h>
+#include "filesys/file.h"
+
 /* Random value for struct thread's `magic' member.
    Used to detect stack overflow.  See the big comment at the top
    of thread.h for details. */
@@ -235,6 +240,10 @@ thread_create (const char *name, int priority,
 
   /* lab3 - supplemental page table */
   init_spt (&(t -> spt));
+
+  /* lab3 - MMF */
+  list_init (&(t -> mmf_list));
+  t -> mmfid = 0;
 
   /* Add to run queue. */
   thread_unblock (t);
@@ -650,4 +659,50 @@ thread_get_child_pcb (tid_t child_tid)
 {
   struct thread *child = thread_get_child (child_tid);
   return (child == NULL) ? NULL : child -> pcb;
+}
+
+struct mmf *
+init_mmf (int mmfid, void *upage, struct file *file)
+{
+  struct thread *thread = thread_current ();
+  struct hash *spt = &(thread -> spt);
+  struct mmf *mmf = (struct mmf *) malloc (sizeof (struct mmf));
+  
+  mmf -> id = mmfid;
+  mmf -> upage = upage;
+  mmf -> file = file;
+
+  off_t size = file_length (file);
+
+  for (off_t ofs = 0; ofs < size; ofs += PGSIZE)
+    if (get_spte (spt, upage + ofs)) return NULL;
+
+  for (off_t ofs = 0; ofs < size; ofs += PGSIZE)
+  {
+    uint32_t read_bytes;
+    if (ofs + PGSIZE < size)
+      read_bytes = PGSIZE;
+    else
+      read_bytes = size - ofs;
+    
+    spalloc_file (spt, upage + ofs, file, ofs, read_bytes, PGSIZE - read_bytes, true);
+  }
+
+  list_push_back (&(thread -> mmf_list), &(mmf -> list_elem));
+
+  return mmf;
+}
+
+struct mmf *
+get_mmf (int mmfid)
+{
+  struct list *mmf_list = &(thread_current () -> mmf_list);
+
+  for (struct list_elem *elem = list_begin (mmf_list); elem != list_end (mmf_list); elem = list_next (elem))
+  {
+    struct mmf *mmf = list_entry (elem, struct mmf, list_elem);
+    if (mmf -> id == mmfid)
+      return mmf;
+  }
+  return NULL;
 }

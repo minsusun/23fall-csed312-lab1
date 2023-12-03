@@ -13,7 +13,7 @@ struct fte
     void *kpage;
     void *upage;
 
-    struct thread *t;
+    struct thread *thread;
     struct list_elem list_elem;
 };
 
