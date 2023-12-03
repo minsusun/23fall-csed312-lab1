@@ -78,3 +78,9 @@ spalloc_file (struct hash *spt, void *upage, struct file *file, off_t ofs, uint3
     entry -> zero_bytes = zero_bytes;
     entry -> writable = writable;
 }
+
+void spdealloc (struct hash *spt, struct spte *entry)
+{
+    hash_delete (spt, &(entry -> hash_elem));
+    free (entry);
+}
