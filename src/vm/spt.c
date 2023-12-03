@@ -107,6 +107,8 @@ load_page (struct hash *spt, void *upage)
             memset (kpage, 0, PGSIZE);
             break;
         case SPAGE_FRAME:
+            break;
+        case SPAGE_SWAP:
             swap_in (entry, kpage);
             break;
         case SPAGE_FILE:
