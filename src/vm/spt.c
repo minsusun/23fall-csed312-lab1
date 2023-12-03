@@ -61,6 +61,8 @@ spalloc (struct hash *spt, void *upage, void *kpage, enum spage_type type)
     entry -> type = type;
     entry -> upage = upage;
     entry -> kpage = kpage;
+    entry -> file = NULL;
+    entry -> writable = true;
     hash_insert (spt, &(entry -> hash_elem));
     return entry;
 }
@@ -153,7 +155,7 @@ get_spte (struct hash *spt, void *upage)
     if (elem == NULL)
         return NULL;
     else
-        return elem;
+        return hash_entry (elem, struct spte, hash_elem);
 }
 
 void spdealloc (struct hash *spt, struct spte *entry)
