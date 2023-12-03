@@ -14,6 +14,10 @@
 /* Lab2 - fileSystem */
 #include "threads/synch.h"
 
+/* lab3 - MMF */
+#include "threads/palloc.h"
+#include "vm/spt.h"
+
 struct lock file_lock;
 
 static void syscall_handler (struct intr_frame *);
@@ -378,11 +382,78 @@ syscall_close (int fd)
 int
 syscall_mmap (int fd, void *vaddr)
 {
+  struct thread *thread = thread_current ();
+  struct pcb *pcb = thread -> pcb;
+  int fdcount = pcb -> fdcount;
+
+  if (vaddr == NULL || (int) vaddr % PGSIZE != 0)
+    return -1;
   
+  if (fd >= fdcount || fd < 0)
+    return -1;
+
+  struct file *file = pcb -> fdtable[fd];
+  if (file == NULL)
+    return -1;
+
+  lock_acquire (&file_lock);
+
+  struct file *file_r = file_reopen (file);
+  if (file_r == NULL)
+  {
+    lock_release (&file_lock);
+    return -1;
+  }
+  
+  struct mmf *mmf = init_mmf (thread -> mmfid, file_r, vaddr);
+  if (mmf == NULL)
+  {
+    lock_release (&file_lock);
+    return -1;
+  }
+  
+  thread -> mmfid ++;
+
+  lock_release (&file_lock);
+  
+  return mmf -> id;
 }
 
 void
-syscall_munmap (int mapid)
+syscall_munmap (int mmfid)
 {
+  struct thread *thread = thread_current ();
+  struct list *mmf_list = &(thread -> mmf_list);
+  struct list_elem *elem;
+  struct mmf *mmf;
+  void *upage;
 
+  if (mmfid >= thread -> mmfid)
+    return;
+
+  for (elem = list_begin (mmf_list); elem != list_end (mmf_list); elem = list_next (elem))
+  {
+    mmf = list_entry (elem, struct mmf, list_elem);
+    if (mmf -> id == mmfid)
+      break;
+  }
+
+  if (elem == list_end (mmf_list))
+    return;
+
+  lock_acquire (&file_lock);
+
+  off_t size = file_length (mmf -> file);
+  for (off_t ofs = 0; ofs < size; ofs += PGSIZE)
+  {
+    struct hash *spt = &(thread -> spt);
+    struct spte *entry = get_spte (spt, upage + ofs);
+    if (pagedir_is_dirty (thread -> pagedir, upage + ofs))
+      file_write_at (entry -> file, pagedir_get_page (thread -> pagedir, upage + ofs), entry -> read_bytes, entry -> ofs);
+    page_delete (spt, entry);
+  }
+
+  list_remove (elem);
+
+  lock_acquire (&file_lock);
 }
