@@ -25,6 +25,8 @@ struct spte
     uint32_t read_bytes;
     uint32_t zero_bytes;
     bool writable;
+
+    int swap_id;
 };
 
 void init_spt (struct hash *spt);
