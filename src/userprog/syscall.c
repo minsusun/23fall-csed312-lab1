@@ -119,7 +119,7 @@ syscall_handler (struct intr_frame *f)
     /* lab3 - MMF */
     case SYS_MMAP:
       load_arguments (f -> esp, argv, 1);
-      syscall_mmap ((int) argv[0], (void *)argv[1]);
+      f -> eax = syscall_mmap ((int) argv[0], (void *)argv[1]);
       break;
     
     case SYS_MUNMAP:
