@@ -34,7 +34,7 @@ unsigned
 spt_hash_func (struct hash_elem *hash_elem, void *aux)
 {
     struct spte *entry = hash_entry (hash_elem, struct spte, hash_elem);   
-    return hash_bytes (&(entry -> kpage), sizeof (entry -> kpage));
+    return hash_bytes (&(entry -> upage), sizeof (entry -> kpage));
 }
 
 bool
