@@ -407,7 +407,7 @@ syscall_mmap (int fd, void *vaddr)
     return -1;
   }
   
-  struct mmf *mmf = init_mmf (thread -> mmfid, file_r, vaddr);
+  struct mmf *mmf = init_mmf (thread -> mmfid, vaddr, file_r);
   if (mmf == NULL)
   {
     lock_release (&file_lock);
