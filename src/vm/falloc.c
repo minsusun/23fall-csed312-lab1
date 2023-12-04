@@ -78,8 +78,8 @@ evict_frame ()
     {
         entry = list_entry (clock, struct fte, list_elem);
 
-        if (pagedir_is_accessed (entry -> thread -> pagedir, entry -> upage))
-            pagedir_set_accessed (entry -> thread -> pagedir, entry -> upage, false);
+        if (pagedir_is_accessed (thread -> pagedir, entry -> upage))
+            pagedir_set_accessed (thread -> pagedir, entry -> upage, false);
         else
             break;
     }
@@ -90,8 +90,8 @@ evict_frame ()
         {
             entry = list_entry (clock, struct fte, list_elem);
 
-            if (pagedir_is_accessed (entry -> thread -> pagedir, entry -> upage))
-                pagedir_set_accessed (entry -> thread -> pagedir, entry -> upage, false);
+            if (pagedir_is_accessed (thread -> pagedir, entry -> upage))
+                pagedir_set_accessed (thread -> pagedir, entry -> upage, false);
             else
                 break;
         }
