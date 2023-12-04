@@ -74,6 +74,9 @@ evict_frame ()
     struct fte *entry;
     struct thread *thread = thread_current ();
 
+    if (clock == NULL)
+        clock = list_begin (&frame_table);
+
     for (clock; clock != list_end (&frame_table); clock = list_next (clock))
     {
         entry = list_entry (clock, struct fte, list_elem);
