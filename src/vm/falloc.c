@@ -8,12 +8,14 @@
 
 static struct list frame_table;
 static struct lock frame_table_lock;
+static struct list_elem *clock;
 
 void
 frame_table_init ()
 {
     list_init (&frame_table);
     lock_init (&frame_table_lock);
+    clock = NULL;
 }
 
 void *
@@ -70,13 +72,29 @@ void
 evict_frame ()
 {
     struct fte *entry;
-    for (struct list_elem *elem = list_begin (&frame_table); ; )
+    struct thread *thread = thread_current ();
+
+    for (clock; clock != list_end (&frame_table); clock = list_next (clock))
     {
-        entry = list_entry (elem, struct fte, list_elem);
-        pagedir_set_accessed (entry -> thread -> pagedir, entry -> upage, false);
-        elem = list_next (elem);
+        entry = list_entry (clock, struct fte, list_elem);
+
         if (pagedir_is_accessed (entry -> thread -> pagedir, entry -> upage))
+            pagedir_set_accessed (entry -> thread -> pagedir, entry -> upage, false);
+        else
             break;
+    }
+
+    if (clock == list_end (&frame_table))
+    {
+        for (clock = list_begin (&frame_table); clock != list_end (&frame_table); clock = list_next (clock))
+        {
+            entry = list_entry (clock, struct fte, list_elem);
+
+            if (pagedir_is_accessed (entry -> thread -> pagedir, entry -> upage))
+                pagedir_set_accessed (entry -> thread -> pagedir, entry -> upage, false);
+            else
+                break;
+        }
     }
 
     struct spte *spte = get_spte (&(thread_current () -> spt), entry ->upage);
