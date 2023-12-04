@@ -160,7 +160,7 @@ page_fault (struct intr_frame *f)
    /* lab3 - lazy loading */
    void *upage = pg_round_down (fault_addr);
 
-   if (is_kernel_vaddr (fault_addr) || !not_present)
+   if (!not_present)
       syscall_exit (-1);
    
    struct hash *spt = &(thread_current () -> spt);
