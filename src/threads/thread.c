@@ -666,7 +666,7 @@ init_mmf (int mmfid, void *upage, struct file *file)
 {
   struct thread *thread = thread_current ();
   struct hash *spt = &(thread -> spt);
-  struct mmf *mmf = (struct mmf *) malloc (sizeof (struct mmf));
+  struct mmf *mmf = (struct mmf *) malloc (sizeof *mmf);
   
   mmf -> id = mmfid;
   mmf -> upage = upage;
