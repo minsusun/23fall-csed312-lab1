@@ -29,4 +29,8 @@ void        syscall_seek (int fd, unsigned position);
 unsigned    syscall_tell (int fd);
 void        syscall_close (int fd);
 
+/* lab3 - MMF */
+int         syscall_mmap (int fd, void *vaddr);
+void        syscall_munmap (int mmfid);
+
 #endif /* userprog/syscall.h */

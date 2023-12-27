@@ -5,6 +5,9 @@
 #include <list.h>
 #include <stdint.h>
 
+/* lab3 - supplemental page table */
+#include <hash.h>
+
 /* Lab2 - systemCall */
 #include "threads/synch.h"
 
@@ -57,6 +60,15 @@ struct pcb
       int fdcount;
       struct file **fdtable;
    };
+
+/* lab3 - MMF */
+struct mmf
+{
+   int id;
+   void *upage;
+   struct file *file;
+   struct list_elem list_elem;
+};
 
 /* A kernel thread or user process.
 
@@ -138,6 +150,16 @@ struct thread
     struct list_elem childelem;
 #endif
 
+   /* lab3 - supplemental page table */
+   struct hash spt;
+
+   /* lab3 - stack growth */
+   void *esp;
+
+   /* lab3 - MMF */
+   int mmfid;
+   struct list mmf_list;
+
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
 
@@ -218,5 +240,9 @@ void mlfqs_update_load_avg  (void);
 /* Lab2 - fileSystem */
 struct thread *thread_get_child (tid_t child_tid);
 struct pcb *thread_get_child_pcb (tid_t child_tid);
+
+/* lab3 - MMF */
+struct mmf *init_mmf (int mmfid, void *upage, struct file *file);
+struct mmf *get_mmf (int mmfid);
 
 #endif /* threads/thread.h */

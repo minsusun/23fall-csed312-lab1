@@ -14,6 +14,12 @@
 /* Lab2 - fileSystem */
 #include "threads/synch.h"
 
+/* lab3 - MMF */
+#include "threads/palloc.h"
+#include "userprog/pagedir.h"
+#include "vm/falloc.h"
+#include "vm/spt.h"
+
 struct lock file_lock;
 
 static void syscall_handler (struct intr_frame *);
@@ -38,6 +44,9 @@ syscall_handler (struct intr_frame *f)
 
   if (!is_valid_vaddr (f -> esp))
     syscall_exit (-1);
+
+  /* lab3 - stack growth */
+  thread_current () -> esp = f -> esp;
 
   int argv[3];
 
@@ -105,6 +114,17 @@ syscall_handler (struct intr_frame *f)
     case SYS_CLOSE:
       load_arguments (f -> esp, argv, 1);
       syscall_close (argv[0]);
+      break;
+    
+    /* lab3 - MMF */
+    case SYS_MMAP:
+      load_arguments (f -> esp, argv, 2);
+      f -> eax = syscall_mmap ((int) argv[0], (void *)argv[1]);
+      break;
+    
+    case SYS_MUNMAP:
+      load_arguments (f -> esp, argv, 1);
+      syscall_munmap ((int) argv[0]);
       break;
 
     default:
@@ -358,4 +378,83 @@ syscall_close (int fd)
   pcb -> fdcount --;
 
   file_close (file);
+}
+
+/* lab3 - MMF */
+int
+syscall_mmap (int fd, void *vaddr)
+{
+  struct thread *thread = thread_current ();
+  struct pcb *pcb = thread -> pcb;
+  int fdcount = pcb -> fdcount;
+
+  if (vaddr == NULL || (int) vaddr % PGSIZE != 0)
+    return -1;
+  
+  if (fd >= fdcount || fd < 0)
+    return -1;
+
+  struct file *file = pcb -> fdtable[fd];
+  if (file == NULL)
+    return -1;
+
+  lock_acquire (&file_lock);
+
+  struct file *file_r = file_reopen (file);
+  if (file_r == NULL)
+  {
+    lock_release (&file_lock);
+    return -1;
+  }
+  
+  struct mmf *mmf = init_mmf (thread -> mmfid, vaddr, file_r);
+  if (mmf == NULL)
+  {
+    lock_release (&file_lock);
+    return -1;
+  }
+  
+  thread -> mmfid ++;
+
+  lock_release (&file_lock);
+  
+  return mmf -> id;
+}
+
+void
+syscall_munmap (int mmfid)
+{
+  struct thread *thread = thread_current ();
+  struct list *mmf_list = &(thread -> mmf_list);
+  struct list_elem *elem;
+  struct hash *spt = &(thread -> spt);
+  struct mmf *mmf;
+
+  if (mmfid >= thread -> mmfid)
+    return;
+
+  for (elem = list_begin (mmf_list); elem != list_end (mmf_list); elem = list_next (elem))
+  {
+    mmf = list_entry (elem, struct mmf, list_elem);
+    if (mmf -> id == mmfid)
+      break;
+  }
+
+  if (elem == list_end (mmf_list))
+    return;
+
+  lock_acquire (&file_lock);
+
+  off_t size = file_length (mmf -> file);
+  for (off_t ofs = 0; ofs < size; ofs += PGSIZE)
+  {
+    struct spte *entry = get_spte (spt, (mmf -> upage) + ofs);
+    if (pagedir_is_dirty (thread -> pagedir, (mmf -> upage) + ofs))
+      file_write_at (entry -> file, pagedir_get_page (thread -> pagedir, (mmf -> upage) + ofs), entry -> read_bytes, entry -> ofs);
+    spdealloc (spt, entry);
+  }
+
+  list_remove (elem);
+
+  lock_release (&file_lock);
 }
