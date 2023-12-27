@@ -5,6 +5,9 @@
 #include <list.h>
 #include <stdint.h>
 
+/* Lab2 - systemCall */
+#include "threads/synch.h"
+
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -33,6 +36,27 @@ typedef int tid_t;
 #define NICE_MAX 20
 #define RECENT_CPU_DEFAULT 0
 #define LOAD_AVG_DEFAULT 0
+
+/* Lab2 - systemCall*/
+struct pcb
+   {
+      int exitcode;
+      
+      /* status */
+      bool isexited;
+      bool isloaded;
+
+      /* sync for load & wait */
+      struct semaphore load;
+      struct semaphore wait;
+
+      /* ROX */
+      struct file *_file;
+
+      /* File Descriptor */
+      int fdcount;
+      struct file **fdtable;
+   };
 
 /* A kernel thread or user process.
 
@@ -106,6 +130,12 @@ struct thread
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
+    /* Lab2 - systemCall*/
+    struct pcb *pcb;
+
+    struct thread *parent;
+    struct list child_list;
+    struct list_elem childelem;
 #endif
 
     /* Owned by thread.c. */
@@ -184,5 +214,9 @@ void mlfqs_update_recent_cpu (struct thread *thread);
 void mlfqs_update_recent_cpu_all (void);
 void mlfqs_update_recent_cpu_tick (void);
 void mlfqs_update_load_avg  (void);
+
+/* Lab2 - fileSystem */
+struct thread *thread_get_child (tid_t child_tid);
+struct pcb *thread_get_child_pcb (tid_t child_tid);
 
 #endif /* threads/thread.h */

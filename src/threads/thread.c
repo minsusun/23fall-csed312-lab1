@@ -213,6 +213,38 @@ thread_create (const char *name, int priority,
   sf->eip = switch_entry;
   sf->ebp = 0;
 
+  /* Lab2 - systemCall */
+  struct thread *parent = thread_current ();
+  struct thread *child = t;
+
+  /* PCB */
+  struct pcb *pcb = child -> pcb = palloc_get_page (0);
+
+  if (pcb == NULL)
+    return TID_ERROR;
+  
+  pcb -> exitcode = -1;
+  pcb -> isexited = false;
+  pcb -> isloaded = false;
+
+  sema_init (&(pcb -> load), 0);
+  sema_init (&(pcb -> wait), 0);
+
+  pcb -> _file = NULL;
+
+  pcb -> fdtable = palloc_get_page (PAL_ZERO);
+  pcb -> fdcount = 2;
+
+  if (pcb -> fdtable == NULL)
+  {
+    palloc_free_page (pcb);
+    return TID_ERROR;
+  }
+
+  child -> parent = parent;
+
+  list_push_back (&(parent -> child_list), &(child -> childelem));
+
   /* Add to run queue. */
   thread_unblock (t);
 
@@ -538,6 +570,9 @@ init_thread (struct thread *t, const char *name, int priority)
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
   intr_set_level (old_level);
+
+  /* Lab2 - systemCall */
+  list_init (&(t -> child_list));
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
@@ -609,7 +644,7 @@ thread_schedule_tail (struct thread *prev)
   if (prev != NULL && prev->status == THREAD_DYING && prev != initial_thread) 
     {
       ASSERT (prev != cur);
-      palloc_free_page (prev);
+      // palloc_free_page (prev);
     }
 }
 
@@ -836,4 +871,32 @@ mlfqs_update_load_avg  (void)
   int a = fp_div (int_fp (59), int_fp(60)); // fp
   int b = fp_div (int_fp (1), int_fp(60));  // fp
   load_avg = fp_add (fp_mul (a, load_avg), fp_mul (b, int_fp (ready_threads)));
+}
+
+/* Lab2 - systemCall & fileSystem */
+/* Return thread pointer to the child of current process
+  matching with child_tid. */
+struct thread *
+thread_get_child (tid_t child_tid)
+{
+  struct list *child_list = &(thread_current () -> child_list);
+  struct list_elem *elem;
+
+  for (elem = list_begin (child_list); elem != list_end (child_list); elem = list_next (elem))
+  {
+    struct thread *child = list_entry (elem, struct thread, childelem);
+    
+    if (child -> tid == child_tid)
+      return child;
+  }
+
+  return NULL;
+}
+
+/* Return pcb pointer of child of current process. */
+struct pcb *
+thread_get_child_pcb (tid_t child_tid)
+{
+  struct thread *child = thread_get_child (child_tid);
+  return (child == NULL) ? NULL : child -> pcb;
 }
