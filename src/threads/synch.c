@@ -68,7 +68,10 @@ sema_down (struct semaphore *sema)
   old_level = intr_disable ();
   while (sema->value == 0) 
     {
-      list_push_back (&sema->waiters, &thread_current ()->elem);
+      // list_push_back (&sema->waiters, &thread_current ()->elem);
+
+      /* Lab1 - priority scheduling */
+      list_insert_ordered (&sema -> waiters, &thread_current () -> elem, thread_compare_priority, 0);
       thread_block ();
     }
   sema->value--;
@@ -114,9 +117,22 @@ sema_up (struct semaphore *sema)
 
   old_level = intr_disable ();
   if (!list_empty (&sema->waiters)) 
+  {
+    /* Lab1 - priority scheduling */
+    /* Priority of waiters for a sema can be changed.
+       Validate with sorting the waiter list.  
+       Waiters list here is list of *THREADS*.       */
+    list_sort (&sema -> waiters, thread_compare_priority, 0);
+
     thread_unblock (list_entry (list_pop_front (&sema->waiters),
                                 struct thread, elem));
+  }
   sema->value++;
+
+  /* Lab1 - priority scheduling */
+  /* There can be a higher priority than current thread on ready_list
+     by unblocking thread. Validate current thread. */
+  thread_validate_priority ();
   intr_set_level (old_level);
 }
 
@@ -143,6 +159,15 @@ sema_self_test (void)
   printf ("done.\n");
 }
 
+/* Lab1 - priority scheduling */
+bool
+sema_compare_priority (const struct list_elem *p1, const struct list_elem *p2, void *aux UNUSED)
+{
+  struct list *waiter1 = &(list_entry (p1, struct semaphore_elem, elem) -> semaphore.waiters);
+  struct list *waiter2 = &(list_entry (p2, struct semaphore_elem, elem) -> semaphore.waiters);
+  return list_entry (list_begin (waiter1), struct thread, elem) -> priority > list_entry (list_begin (waiter2), struct thread, elem) -> priority;
+}
+
 /* Thread function used by sema_self_test(). */
 static void
 sema_test_helper (void *sema_) 
@@ -156,7 +181,7 @@ sema_test_helper (void *sema_)
       sema_up (&sema[1]);
     }
 }
-
+
 /* Initializes LOCK.  A lock can be held by at most a single
    thread at any given time.  Our locks are not "recursive", that
    is, it is an error for the thread currently holding a lock to
@@ -196,7 +221,21 @@ lock_acquire (struct lock *lock)
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
 
+  struct thread *current = thread_current ();
+
+  /* Lab1 - priority donation & MLFQS */
+  if (!thread_mlfqs && lock -> holder)
+  {
+    current -> _lock = lock;
+    list_insert_ordered (&lock -> holder -> donation_list, &current -> donation_elem, thread_compare_donation_priority, 0);
+    donate_priority ();
+  }
+
   sema_down (&lock->semaphore);
+
+  /* Lab1 - priority donation */
+  current -> _lock = NULL;
+  
   lock->holder = thread_current ();
 }
 
@@ -231,6 +270,20 @@ lock_release (struct lock *lock)
   ASSERT (lock != NULL);
   ASSERT (lock_held_by_current_thread (lock));
 
+  /* Lab1 - MLFQS */
+  if (!thread_mlfqs)
+  {
+    /* Lab1 - priority scheduling */
+    remove_donation (lock);
+    /* update_donation() for only current thread
+      :: Only donations made by currently releasing lock
+      will make changes. Other priority donations
+      DOES NOT change the other threads' priority.  */
+    /* Operation of set priority function can mess up donations.
+      re-order the donation list to clear up donations. */
+    update_donation ();
+  }
+
   lock->holder = NULL;
   sema_up (&lock->semaphore);
 }
@@ -245,13 +298,6 @@ lock_held_by_current_thread (const struct lock *lock)
 
   return lock->holder == thread_current ();
 }
-
-/* One semaphore in a list. */
-struct semaphore_elem 
-  {
-    struct list_elem elem;              /* List element. */
-    struct semaphore semaphore;         /* This semaphore. */
-  };
 
 /* Initializes condition variable COND.  A condition variable
    allows one piece of code to signal a condition and cooperating
@@ -295,7 +341,13 @@ cond_wait (struct condition *cond, struct lock *lock)
   ASSERT (lock_held_by_current_thread (lock));
   
   sema_init (&waiter.semaphore, 0);
-  list_push_back (&cond->waiters, &waiter.elem);
+  // list_push_back (&cond->waiters, &waiter.elem);
+
+  /* Lab1 - priority scheduling */
+  /* Waiters are a list of semaphores. Use compare function for semaphores
+     ordering semaphores according the highest priority of it.   */
+  list_insert_ordered (&cond -> waiters, &waiter.elem, sema_compare_priority, 0);
+  
   lock_release (lock);
   sema_down (&waiter.semaphore);
   lock_acquire (lock);
@@ -317,8 +369,17 @@ cond_signal (struct condition *cond, struct lock *lock UNUSED)
   ASSERT (lock_held_by_current_thread (lock));
 
   if (!list_empty (&cond->waiters)) 
+  {
+    /* Lab1 - priority scheduling */
+    /* Priority of waiters can be changed. */
+    list_sort (&cond -> waiters, sema_compare_priority, 0);
+
+    /* Unblocking a thread by sema_up() function may have
+       higher priority thread on ready_list. sema_up() function
+       will handle it. */
     sema_up (&list_entry (list_pop_front (&cond->waiters),
                           struct semaphore_elem, elem)->semaphore);
+  }
 }
 
 /* Wakes up all threads, if any, waiting on COND (protected by

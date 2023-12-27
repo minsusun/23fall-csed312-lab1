@@ -24,6 +24,16 @@ typedef int tid_t;
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
 
+/* Lab1 - priority donation */
+#define DONATION_MAX_DEPTH 8
+
+/* Lab1 - MLFQS */
+#define NICE_MIN -20
+#define NICE_DEFAULT 0
+#define NICE_MAX 20
+#define RECENT_CPU_DEFAULT 0
+#define LOAD_AVG_DEFAULT 0
+
 /* A kernel thread or user process.
 
    Each thread structure is stored in its own 4 kB page.  The
@@ -100,6 +110,20 @@ struct thread
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
+
+    /* Lab1 - alarm clock */
+    int64_t wakeup_ticks;
+    struct list_elem sleep_elem;
+    
+    /* Lab1 - priority donation */
+    int priority_original;
+    struct lock *_lock;
+    struct list donation_list;
+    struct list_elem donation_elem;
+    
+    /* Lab1 - MLFQS */
+    int nice;
+    int recent_cpu;
   };
 
 /* If false (default), use round-robin scheduler.
@@ -137,5 +161,28 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+/* Lab1 - alarm clock */
+bool thread_compare_wakeup_ticks (const struct list_elem *p1, const struct list_elem *p2, void *aux UNUSED);
+void thread_sleep (int64_t wakeup_tick);
+void thread_wakeup (int64_t current_tick);
+
+/* Lab1 - priority scheduling */
+bool thread_compare_priority (const struct list_elem *p1, const struct list_elem *p2, void *aux UNUSED);
+void thread_validate_priority (void);
+
+/* Lab1 - priority donation */
+bool thread_compare_donation_priority (const struct list_elem *p1, const struct list_elem *p2, void *aux UNUSED);
+void donate_priority (void);
+void update_donation (void);
+void remove_donation (struct lock *lock);
+
+/* Lab1 - MLFQS */
+void mlfqs_update_priority (struct thread *thread);
+void mlfqs_update_priority_all (void);
+void mlfqs_update_recent_cpu (struct thread *thread);
+void mlfqs_update_recent_cpu_all (void);
+void mlfqs_update_recent_cpu_tick (void);
+void mlfqs_update_load_avg  (void);
 
 #endif /* threads/thread.h */
